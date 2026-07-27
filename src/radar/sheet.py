@@ -22,7 +22,10 @@ INSERT_DATA_OPTION = "INSERT_ROWS"
 HEADER_ROW = 1
 FIRST_DATA_ROW = 2
 HEADER_RANGE = "A1"
-FIRST_WORKSHEET_INDEX = 0
+
+WORKSHEET_TITLE = "Job Radar"
+NEW_WORKSHEET_ROWS = 1000
+NEW_WORKSHEET_COLS = len(SHEET_HEADERS)
 
 COMPANY_INDEX = SHEET_HEADERS.index("Company")
 ROLE_INDEX = SHEET_HEADERS.index("Role")
@@ -67,7 +70,7 @@ def _cell(row: Sequence[str], index: int) -> str:
     return row[index].strip()
 
 
-def _open_worksheet(sheet_id: str, service_account_json: str) -> gspread.Worksheet:
+def _open_spreadsheet(sheet_id: str, service_account_json: str) -> gspread.Spreadsheet:
     try:
         account_info = json.loads(service_account_json)
     except json.JSONDecodeError as exc:
@@ -80,12 +83,31 @@ def _open_worksheet(sheet_id: str, service_account_json: str) -> gspread.Workshe
 
     try:
         client = gspread.authorize(credentials)
-        spreadsheet = client.open_by_key(sheet_id)
-        return spreadsheet.get_worksheet(FIRST_WORKSHEET_INDEX)
+        return client.open_by_key(sheet_id)
     except google.auth.exceptions.GoogleAuthError as exc:
         raise SheetError(f"Google authentication failed: {exc}") from exc
     except gspread.exceptions.GSpreadException as exc:
         raise SheetError(f"Could not open spreadsheet {sheet_id}: {exc}") from exc
+
+
+def _own_worksheet(spreadsheet: gspread.Spreadsheet) -> gspread.Worksheet:
+    """Return the tab job-radar owns, creating it if the spreadsheet has no such tab.
+
+    Never positional: a spreadsheet's leftmost tab may be someone else's tracker.
+    """
+    try:
+        return spreadsheet.worksheet(WORKSHEET_TITLE)
+    except gspread.exceptions.WorksheetNotFound:
+        logger.info("Creating worksheet %s", WORKSHEET_TITLE)
+    except gspread.exceptions.GSpreadException as exc:
+        raise SheetError(f"Could not open worksheet {WORKSHEET_TITLE}: {exc}") from exc
+
+    try:
+        return spreadsheet.add_worksheet(
+            title=WORKSHEET_TITLE, rows=NEW_WORKSHEET_ROWS, cols=NEW_WORKSHEET_COLS
+        )
+    except gspread.exceptions.GSpreadException as exc:
+        raise SheetError(f"Could not create worksheet {WORKSHEET_TITLE}: {exc}") from exc
 
 
 def _widen_to_headers(worksheet: gspread.Worksheet) -> None:
@@ -133,10 +155,9 @@ class JobSheet:
 
     @classmethod
     def open(cls, sheet_id: str, service_account_json: str) -> "JobSheet":
-        """Authorize with a service account key string and open the first worksheet."""
-        worksheet = _open_worksheet(sheet_id, service_account_json)
-        if worksheet is None:
-            raise SheetError(f"Spreadsheet {sheet_id} has no worksheets")
+        """Authorize with a service account key string and open the tab job-radar owns."""
+        spreadsheet = _open_spreadsheet(sheet_id, service_account_json)
+        worksheet = _own_worksheet(spreadsheet)
         _ensure_headers(worksheet)
         return cls(worksheet)
 

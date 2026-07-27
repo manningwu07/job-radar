@@ -5,9 +5,11 @@ import logging
 import os
 import smtplib
 import sys
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from enum import IntEnum
 from pathlib import Path
+from typing import NamedTuple
 from zoneinfo import ZoneInfo
 
 from radar.boards import BOARDS
@@ -39,6 +41,13 @@ class ExitCode(IntEnum):
     CONFIG_ERROR = 2
     SHEET_ERROR = 3
     NO_SOURCES = 4
+
+
+class AppendPlan(NamedTuple):
+    """`diff.new` split by what the sheet already holds."""
+
+    to_append: list[Job]
+    already_present: list[Job]
 
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -81,6 +90,26 @@ def _send_email_best_effort(digest: str) -> None:
         logger.exception("Email delivery failed, continuing without it")
 
 
+def _reconcile_with_sheet(new_jobs: Sequence[Job], rows: Mapping[str, int]) -> AppendPlan:
+    """Split `diff.new` into rows the sheet lacks and rows it already holds.
+
+    `diff.new` is derived from the state file alone, so it lists every job the state has
+    not seen even when the sheet already holds it. The two drift for ordinary reasons: a
+    first run against a populated sheet, a state commit that never got pushed, a user
+    resetting `data/state.json`, or two runs racing. The sheet is authoritative for what is
+    present, so anything already there is never appended again.
+    """
+    to_append = [job for job in new_jobs if job.key not in rows]
+    already_present = [job for job in new_jobs if job.key in rows]
+    if already_present:
+        logger.info(
+            "State and sheet disagree: %d job(s) already in the sheet, appending %d",
+            len(already_present),
+            len(to_append),
+        )
+    return AppendPlan(to_append=to_append, already_present=already_present)
+
+
 def _publish(
     diff: Diff, ranked_jobs: list[Job], store: Store, state_path: Path
 ) -> ExitCode:
@@ -89,13 +118,14 @@ def _publish(
             os.environ[ENV_SHEET_ID], os.environ[ENV_SERVICE_ACCOUNT_JSON]
         )
         rows = sheet.existing_keys()
-        appended = sheet.append(diff.new)
-        updated = sheet.update_apply_urls(diff.changed, rows)
+        plan = _reconcile_with_sheet(diff.new, rows)
+        appended = sheet.append(plan.to_append)
+        updated = sheet.update_apply_urls([*diff.changed, *plan.already_present], rows)
     except SheetError:
         logger.exception("Sheet update failed, state left untouched for the next run")
         return ExitCode.SHEET_ERROR
     logger.info("Appended %d rows, refreshed %d application URLs", appended, updated)
-    digest = render_digest(diff.new, updated)
+    digest = render_digest(plan.to_append, updated)
     write_step_summary(digest)
     print(digest)
     _send_email_best_effort(digest)

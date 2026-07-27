@@ -14,6 +14,39 @@ SHEET_ID = "sheet-abc123"
 APPLY_URL_COLUMN_LETTER = "H"
 DEFAULT_COL_COUNT = len(SHEET_HEADERS)
 JOINED_LOCATION = join_locations(["Mountain View, CA", "Bellevue, WA", "Austin, TX", "Chicago, IL"])
+TRACKER_HEADER_ROW = [
+    "Company",
+    "Role",
+    "Location",
+    "Role Family",
+    "Priority",
+    "Status",
+    "Date Applied",
+    "Referral / Contact",
+    "Resume",
+    "Direct Link",
+    "Follow-up",
+]
+APPLICATIONS_TRACKER_ROWS = [
+    ["Total tracked", "Submitted", "Needs confirmation", "In progress"],
+    ["8", "8", "0", "0"],
+    [],
+    [],
+    list(TRACKER_HEADER_ROW),
+    [
+        "Google",
+        "",
+        "Mountain View, CA",
+        "SWE",
+        "Dream",
+        "In Progress",
+        "2026-07-24",
+        "Brandon Xu",
+        "SWE resume v3",
+        "https://careers.google.com/jobs/results/1",
+        "",
+    ],
+]
 
 
 def make_row(company="", role="", location="", apply_url=""):
@@ -105,13 +138,22 @@ class FakeCredentials:
 
 
 class FakeSpreadsheet:
-    def __init__(self, worksheet):
-        self.worksheet = worksheet
-        self.requested_index = None
+    def __init__(self, tabs=None):
+        self.tabs = dict(tabs or {})
+        self.requested_titles = []
+        self.added_worksheets = []
 
-    def get_worksheet(self, index):
-        self.requested_index = index
-        return self.worksheet
+    def worksheet(self, title):
+        self.requested_titles.append(title)
+        if title not in self.tabs:
+            raise gspread.exceptions.WorksheetNotFound(title)
+        return self.tabs[title]
+
+    def add_worksheet(self, title, rows, cols):
+        self.added_worksheets.append((title, rows, cols))
+        created = FakeWorksheet(col_count=cols)
+        self.tabs[title] = created
+        return created
 
 
 class FakeClient:
@@ -125,9 +167,9 @@ class FakeClient:
 
 
 class FakeAuthorizer:
-    def __init__(self, worksheet):
-        self.spreadsheet = FakeSpreadsheet(worksheet)
-        self.client = FakeClient(self.spreadsheet)
+    def __init__(self, spreadsheet):
+        self.spreadsheet = spreadsheet
+        self.client = FakeClient(spreadsheet)
         self.credentials = None
 
     def __call__(self, credentials):
@@ -135,15 +177,25 @@ class FakeAuthorizer:
         return self.client
 
 
-def patch_google(monkeypatch, worksheet):
-    authorizer = FakeAuthorizer(worksheet)
+def patch_google_spreadsheet(monkeypatch, spreadsheet):
+    authorizer = FakeAuthorizer(spreadsheet)
     monkeypatch.setattr(sheet, "Credentials", FakeCredentials)
     monkeypatch.setattr(sheet.gspread, "authorize", authorizer)
     return authorizer
 
 
+def patch_google(monkeypatch, worksheet):
+    return patch_google_spreadsheet(
+        monkeypatch, FakeSpreadsheet(tabs={sheet.WORKSHEET_TITLE: worksheet})
+    )
+
+
 def test_scopes_are_minimal():
     assert sheet.SHEET_SCOPES == ("https://www.googleapis.com/auth/spreadsheets",)
+
+
+def test_worksheet_title_is_a_module_constant():
+    assert sheet.WORKSHEET_TITLE == "Job Radar"
 
 
 def test_open_writes_headers_on_empty_sheet(monkeypatch):
@@ -153,29 +205,60 @@ def test_open_writes_headers_on_empty_sheet(monkeypatch):
     sheet.JobSheet.open(SHEET_ID, SERVICE_ACCOUNT_JSON)
 
     assert authorizer.client.opened_key == SHEET_ID
-    assert authorizer.spreadsheet.requested_index == sheet.FIRST_WORKSHEET_INDEX
+    assert authorizer.spreadsheet.requested_titles == [sheet.WORKSHEET_TITLE]
     assert authorizer.credentials.scopes == list(sheet.SHEET_SCOPES)
     assert ("update", "A1", [SHEET_HEADERS], sheet.VALUE_INPUT_OPTION) in worksheet.calls
 
 
-def test_open_leaves_matching_headers_untouched(monkeypatch):
+def test_open_creates_the_dedicated_tab_when_absent(monkeypatch):
+    spreadsheet = FakeSpreadsheet()
+    authorizer = patch_google_spreadsheet(monkeypatch, spreadsheet)
+
+    job_sheet = sheet.JobSheet.open(SHEET_ID, SERVICE_ACCOUNT_JSON)
+
+    assert authorizer.spreadsheet.requested_titles == [sheet.WORKSHEET_TITLE]
+    assert len(spreadsheet.added_worksheets) == 1
+    title, rows, cols = spreadsheet.added_worksheets[0]
+    assert title == sheet.WORKSHEET_TITLE
+    assert cols >= len(SHEET_HEADERS)
+    assert rows > 1
+    created = spreadsheet.tabs[sheet.WORKSHEET_TITLE]
+    assert ("update", "A1", [SHEET_HEADERS], sheet.VALUE_INPUT_OPTION) in created.calls
+    assert job_sheet.existing_keys() == {}
+
+
+def test_open_reuses_the_dedicated_tab_and_leaves_matching_headers_untouched(monkeypatch):
     worksheet = FakeWorksheet(values=[list(SHEET_HEADERS)])
-    patch_google(monkeypatch, worksheet)
+    authorizer = patch_google(monkeypatch, worksheet)
 
     sheet.JobSheet.open(SHEET_ID, SERVICE_ACCOUNT_JSON)
 
+    assert authorizer.spreadsheet.added_worksheets == []
     assert "update" not in worksheet.call_names()
 
 
+def test_open_never_touches_a_foreign_leftmost_tab(monkeypatch):
+    tracker = FakeWorksheet(values=copy.deepcopy(APPLICATIONS_TRACKER_ROWS))
+    spreadsheet = FakeSpreadsheet(tabs={"Applications": tracker})
+    patch_google_spreadsheet(monkeypatch, spreadsheet)
+
+    sheet.JobSheet.open(SHEET_ID, SERVICE_ACCOUNT_JSON)
+
+    assert spreadsheet.requested_titles == [sheet.WORKSHEET_TITLE]
+    assert [title for title, _, _ in spreadsheet.added_worksheets] == [sheet.WORKSHEET_TITLE]
+    assert tracker.calls == []
+    assert tracker.values == APPLICATIONS_TRACKER_ROWS
+
+
 def test_open_raises_on_mismatched_headers(monkeypatch):
-    worksheet = FakeWorksheet(values=[["Company", "Job Title", "Where"]])
+    worksheet = FakeWorksheet(values=[list(TRACKER_HEADER_ROW)])
     patch_google(monkeypatch, worksheet)
 
     with pytest.raises(sheet.SheetError) as excinfo:
         sheet.JobSheet.open(SHEET_ID, SERVICE_ACCOUNT_JSON)
 
     message = str(excinfo.value)
-    assert "Job Title" in message
+    assert "Role Family" in message
     assert "Application URL" in message
     assert "update" not in worksheet.call_names()
 
