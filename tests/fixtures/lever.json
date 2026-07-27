@@ -1,0 +1,36 @@
+[
+  {
+    "id": "0ccbe620-a3ef-41d1-a5c4-68e56b3c91d0",
+    "text": "American Tech Fellowship",
+    "categories": {
+      "allLocations": [
+        "North America"
+      ],
+      "commitment": "Scholarship",
+      "location": "North America",
+      "team": "Business Development"
+    },
+    "createdAt": 1750119374985,
+    "descriptionPlain": "Palantir builds software for data-driven decisions.",
+    "hostedUrl": "https://jobs.lever.co/palantir/0ccbe620-a3ef-41d1-a5c4-68e56b3c91d0",
+    "applyUrl": "https://jobs.lever.co/palantir/0ccbe620-a3ef-41d1-a5c4-68e56b3c91d0/apply",
+    "workplaceType": "remote"
+  },
+  {
+    "id": "f4746da4-8eb8-43e2-b7ce-bf3c7cf9640d",
+    "text": "Autonomy System Test Engineer",
+    "categories": {
+      "allLocations": [
+        "Foster City, CA"
+      ],
+      "commitment": "Full-time",
+      "location": "Foster City, CA",
+      "team": "Software Quality Assurance"
+    },
+    "createdAt": 1777936261125,
+    "descriptionPlain": "Autonomous vehicles have complex safety-critical software.",
+    "hostedUrl": "https://jobs.lever.co/zoox/f4746da4-8eb8-43e2-b7ce-bf3c7cf9640d",
+    "applyUrl": "https://jobs.lever.co/zoox/f4746da4-8eb8-43e2-b7ce-bf3c7cf9640d/apply",
+    "workplaceType": "hybrid"
+  }
+]

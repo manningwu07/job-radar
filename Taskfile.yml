@@ -1,0 +1,65 @@
+version: "3"
+
+tasks:
+  default:
+    desc: "List all tasks"
+    cmds:
+      - task --list-all
+    silent: true
+
+  install:
+    desc: "Create .venv and install runtime + dev dependencies"
+    summary: |
+      Resolves and installs everything declared in pyproject.toml into a local
+      .venv, including the `dev` dependency group (pytest). Also installs the
+      `radar` package itself in editable mode, which is what makes the
+      `job-radar` console script available.
+
+      Run this once after cloning. You do not need to re-run it after editing
+      source files, and you do not need to activate the venv by hand: every
+      other task shells out through `uv run`, which resolves the environment
+      automatically.
+    cmds:
+      - uv sync
+
+  test:
+    desc: "Run the pytest suite"
+    summary: |
+      Runs pytest from the repository root. testpaths and pythonpath are set in
+      pyproject.toml, so `src/` is importable without installing anything extra
+      and you do not need to pass any paths or flags.
+
+      Tests are offline by design: network calls and Google Sheets access are
+      stubbed, so this never touches a real job board, a real spreadsheet, or
+      your credentials.
+    cmds:
+      - uv run pytest
+
+  dry-run:
+    desc: "Fetch and triage, print the digest, write nothing (no credentials needed)"
+    summary: |
+      The safe way to see what the pipeline would do. It fetches the job boards,
+      runs triage, and prints the digest to stdout. It does not write to the
+      Google Sheet, does not send email, and does not update data/state.json.
+
+      This path requires no credentials at all: no service account key, no sheet
+      ID, no SMTP password. Because state is never saved, every dry run reports
+      the same jobs as new. Use this to sanity-check board tokens and triage
+      rules before wiring up any secrets.
+    cmds:
+      - uv run job-radar --dry-run
+
+  run:
+    desc: "Real run: fetch, triage, update the sheet, email the digest, save state"
+    summary: |
+      The full pipeline, identical to what the daily GitHub Action executes.
+      It fetches every board, triages the results, diffs against
+      data/state.json, appends new rows to the Google Sheet, emails you the
+      digest, and saves the updated state file.
+
+      This requires all five environment variables to be set:
+      JOB_RADAR_SHEET_ID, GOOGLE_SERVICE_ACCOUNT_JSON, SMTP_USER, SMTP_PASSWORD,
+      and NOTIFY_EMAIL. See the README for how to obtain each one. Missing
+      configuration exits with code 2 rather than doing partial work.
+    cmds:
+      - uv run job-radar

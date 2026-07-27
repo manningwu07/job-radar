@@ -1,0 +1,22 @@
+# Credentials - never commit these
+*service-account*.json
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# uv and virtualenvs
+.venv/
+venv/
+
+# Test and tool caches
+.pytest_cache/
+.ruff_cache/
+
+# Editors and OS noise
+.vscode/
+.idea/
+*.swp
+.DS_Store

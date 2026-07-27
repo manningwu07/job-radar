@@ -1,0 +1,151 @@
+[
+  {
+    "active": true,
+    "company_name": "Rippling",
+    "company_url": "",
+    "date_posted": 1749260792,
+    "date_updated": 1749260792,
+    "id": "df70fa57-977b-4f31-832e-a0e57ed070b5",
+    "is_visible": true,
+    "locations": [
+      "New York, NY",
+      "San Francisco, CA"
+    ],
+    "season": "Winter",
+    "source": "vanshb03",
+    "sponsorship": "Other",
+    "title": "Frontend Software Engineer Intern",
+    "url": "https://ats.rippling.com/en-GB/rippling/jobs/3fd9615a-d0c7-458c-a0fc-5d9d7f0ce77c"
+  },
+  {
+    "active": true,
+    "company_name": "Rippling",
+    "company_url": "",
+    "date_posted": 1749260811,
+    "date_updated": 1749260811,
+    "id": "62b793bb-caea-465f-a95f-ce43bb81f1fc",
+    "is_visible": true,
+    "locations": [
+      "San Francisco, CA"
+    ],
+    "season": "Winter",
+    "source": "vanshb03",
+    "sponsorship": "Other",
+    "title": "Machine Learning Engineer Intern",
+    "url": "https://ats.rippling.com/en-GB/rippling/jobs/ee1ec0b1-9a55-408d-979d-9c74f257e9ea"
+  },
+  {
+    "active": true,
+    "company_name": "Google",
+    "company_url": "",
+    "date_posted": 1784878468,
+    "date_updated": 1784878468,
+    "id": "3bf282cf-0952-44ca-85dc-2415cb802265",
+    "is_visible": true,
+    "locations": [
+      "Mountain View, CA",
+      "Atlanta, GA",
+      "Austin, TX",
+      "Boulder, CO",
+      "Cambridge, MA",
+      "Bellevue, WA",
+      "Chicago, IL",
+      "Houston, TX",
+      "Irvine, CA",
+      "Kirkland, WA",
+      "Los Angeles, CA",
+      "Madison, WI",
+      "New York, NY",
+      "Palo Alto, CA",
+      "Portland, OR",
+      "Pittsburgh, PA",
+      "Raleigh, NC",
+      "Durham, NC",
+      "Reston, VA",
+      "Redmond, WA",
+      "Redwood City, CA",
+      "San Diego, CA",
+      "Goleta, CA",
+      "San Bruno, CA",
+      "Seattle, WA",
+      "San Francisco, CA",
+      "San Jose, CA",
+      "Santa Cruz, CA",
+      "South San Francisco, CA",
+      "Sunnyvale, CA"
+    ],
+    "season": "Summer",
+    "source": "vanshb03",
+    "sponsorship": "Other",
+    "title": "Software Engineering Intern",
+    "url": "https://www.google.com/about/careers/applications/jobs/results/85564713261245126-software-engineering-intern-bs-summer-2027"
+  },
+  {
+    "active": true,
+    "company_name": "Palantir Technologies",
+    "company_url": "",
+    "date_posted": 1784882282,
+    "date_updated": 1784882282,
+    "id": "a7abcc46-052a-42b3-a1b9-4ebc6d07ecb3",
+    "is_visible": true,
+    "locations": [
+      "Washington, D.C."
+    ],
+    "season": "Fall",
+    "source": "vanshb03",
+    "sponsorship": "U.S. Citizenship is Required",
+    "title": "Forward Deployed Infrastructure Engineer Intern",
+    "url": "https://jobs.lever.co/palantir/3db7e40a-28e0-4ad1-96c5-93de5bc96aa9"
+  },
+  {
+    "active": true,
+    "company_name": "Etched",
+    "company_url": "",
+    "date_posted": 1779485542,
+    "date_updated": 1779485542,
+    "id": "4de97e32-605a-4de3-9488-de44eb5fc812",
+    "is_visible": true,
+    "locations": [
+      "San Jose, CA"
+    ],
+    "season": "Spring",
+    "source": "vanshb03",
+    "sponsorship": "Other",
+    "title": "Supercomputing Intern",
+    "url": "https://jobs.ashbyhq.com/Etched/20f77518-1699-4184-ac8e-9fa2f614d6fb"
+  },
+  {
+    "active": true,
+    "company_name": "Season Test Systems",
+    "company_url": "",
+    "date_posted": 1784883000,
+    "date_updated": 1784883000,
+    "id": "c05ef333-aa5d-46c0-b263-fbe3592167fa",
+    "is_visible": true,
+    "locations": [
+      "Remote"
+    ],
+    "season": "Monsoon",
+    "source": "test-fixture",
+    "sponsorship": "Other",
+    "title": "Platform Engineering Intern",
+    "url": "https://example.com/jobs/platform-engineering-intern"
+  },
+  {
+    "active": false,
+    "company_name": "Belvedere Trading",
+    "company_url": "",
+    "date_posted": 1752524369,
+    "date_updated": 1757658515,
+    "id": "cfb9420c-289e-4b59-822d-a687edbdac21",
+    "is_visible": true,
+    "locations": [
+      "Chicago, IL"
+    ],
+    "season": "Winter",
+    "source": "vanshb03",
+    "sponsorship": "Does Not Offer Sponsorship",
+    "title": "Quantitative Trading Intern",
+    "url": "https://jobs.lever.co/belvederetrading/5e07daf3-a6bb-40d4-8125-b56d2ea20d81"
+  }
+]

@@ -1,0 +1,30 @@
+[project]
+name = "job-radar"
+version = "0.1.0"
+description = "Daily scan of company ATS job boards for Summer 2027 SWE internships, into a Google Sheet."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.32",
+    "gspread>=6.0",
+    "google-auth>=2.35",
+]
+
+[project.scripts]
+job-radar = "radar.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "radar"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

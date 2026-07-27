@@ -1,0 +1,38 @@
+{
+  "jobs": [
+    {
+      "title": "Software Engineer, Developer Productivity",
+      "location": "San Francisco",
+      "secondaryLocations": [
+        {
+          "location": "New York City"
+        },
+        {
+          "location": "Seattle"
+        }
+      ],
+      "publishedAt": "2025-03-27T16:44:10.676+00:00",
+      "jobUrl": "https://jobs.ashbyhq.com/openai/2cba0d45-7a4f-4f38-ac73-3f8633bf0349",
+      "applyUrl": "https://jobs.ashbyhq.com/openai/2cba0d45-7a4f-4f38-ac73-3f8633bf0349/application",
+      "descriptionPlain": "Build developer productivity systems.",
+      "workplaceType": null
+    },
+    {
+      "title": "Clean Energy and New Technology Lead",
+      "location": "Remote - US",
+      "secondaryLocations": [
+        {
+          "location": "Seattle"
+        },
+        {
+          "location": "San Francisco"
+        }
+      ],
+      "publishedAt": "2026-07-13T22:23:12.926+00:00",
+      "jobUrl": "https://jobs.ashbyhq.com/openai/676d359b-0ef6-40a5-81d5-d4f2eb198eab",
+      "applyUrl": "https://jobs.ashbyhq.com/openai/676d359b-0ef6-40a5-81d5-d4f2eb198eab/application",
+      "descriptionPlain": "Build advanced AI infrastructure ecosystems.",
+      "workplaceType": "Remote"
+    }
+  ]
+}
