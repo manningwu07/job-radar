@@ -1,4 +1,495 @@
 {
-  "version": 1,
-  "jobs": {}
+  "jobs": {
+    "03a212231b200e88": {
+      "apply_url": "https://jobs.ashbyhq.com/apex-technology-inc/5ec2dfa9-724d-4ce4-ab97-5067ec747f11",
+      "company": "Apex Technology",
+      "first_seen": "2026-07-27",
+      "location": "Los Angeles",
+      "role": "Software Engineering Intern, Embedded Systems"
+    },
+    "07ae7dd4c2d8da61": {
+      "apply_url": "https://www.workatastartup.com/jobs/95003",
+      "company": "StarSling",
+      "first_seen": "2026-07-27",
+      "location": "San Mateo, CA",
+      "role": "Software Engineer Intern"
+    },
+    "0bd5664b8ac0df6e": {
+      "apply_url": "https://jobs.lever.co/palantir/5c4c65c5-77da-4d36-856c-4ade87631019/apply",
+      "company": "Palantir",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY; Washington, D.C.",
+      "role": "Year at Palantir - Forward Deployed Software Engineer, Internship - USG"
+    },
+    "0f7686ff54f87aae": {
+      "apply_url": "https://akunacapital.com/careers/job/8018886/?gh_jid=8018886",
+      "company": "Akuna Capital",
+      "first_seen": "2026-07-27",
+      "location": "Chicago, IL",
+      "role": "Software Engineer Intern, C# .NET Desktop"
+    },
+    "10e0772b080e952c": {
+      "apply_url": "https://selinc.wd1.myworkdayjobs.com/SEL/job/Idaho---Boise/Software-Engineer-Intern_2026-22321",
+      "company": "Schweitzer Engineering Laboratories",
+      "first_seen": "2026-07-27",
+      "location": "Boise, ID",
+      "role": "Software Engineer Intern"
+    },
+    "151ecb1af7e7e555": {
+      "apply_url": "https://job-boards.greenhouse.io/appian/jobs/8041237",
+      "company": "Appian",
+      "first_seen": "2026-07-27",
+      "location": "McLean, VA",
+      "role": "Software Engineering Intern"
+    },
+    "17c7df6da510f027": {
+      "apply_url": "https://careers.ice.com/jobs/12830?lang=en-us&iis=LinkedIn&iisn=Linkedin&mode=apply&jr_id=69e67bb27820c036924d0af9",
+      "company": "Intercontinental Exchange",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY",
+      "role": "Artificial Intelligence, Data & Machine Learning Intern"
+    },
+    "1a205e7b3897816c": {
+      "apply_url": "https://jobs.ashbyhq.com/perplexity/be94e89b-89d5-4f2a-a58b-7929c8d97f92/application",
+      "company": "Perplexity",
+      "first_seen": "2026-07-27",
+      "location": "Belgrade",
+      "role": "Internship - Search Backend Infra Engineer"
+    },
+    "1a2980ae01d5afee": {
+      "apply_url": "https://jobs.lever.co/palantir/b229baac-494b-4a0d-9a13-2e38806e06f3",
+      "company": "Palantir",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY",
+      "role": "Software Engineer Intern, Infrastructure"
+    },
+    "1b071c5e2494b52f": {
+      "apply_url": "https://www.janestreet.com/join-jane-street/position/8384490002/",
+      "company": "Jane Street",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY",
+      "role": "Machine Learning Researcher Intern"
+    },
+    "235d9d712166418e": {
+      "apply_url": "https://www.google.com/about/careers/applications/jobs/results/85564713261245126-software-engineering-intern-bs-summer-2027",
+      "company": "Google",
+      "first_seen": "2026-07-27",
+      "location": "Mountain View, CA; Atlanta, GA; Austin, TX",
+      "role": "Software Engineering Intern"
+    },
+    "259e7d40af9b933f": {
+      "apply_url": "https://jobs.ashbyhq.com/perplexity/71168628-1998-47d3-87a9-be7bc56a430d/application",
+      "company": "Perplexity",
+      "first_seen": "2026-07-27",
+      "location": "London",
+      "role": "Internship - Search Machine Learning Engineer"
+    },
+    "26edd0a52967766b": {
+      "apply_url": "https://jobs.lever.co/palantir/ac0dc094-2480-43c2-8495-26ade227ff4f/apply",
+      "company": "Palantir",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY",
+      "role": "Forward Deployed Software Engineer, Internship - France"
+    },
+    "2b0a4c805970b2b9": {
+      "apply_url": "https://www.hudsonrivertrading.com/hrt-job/software-engineering-internship-c-or-python-summer-2027/?gh_src=",
+      "company": "Hudson River Trading",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY; Austin, TX; Chicago, IL",
+      "role": "Software Engineer Intern"
+    },
+    "2fc3e429bf0db6c5": {
+      "apply_url": "https://job-boards.greenhouse.io/virtu/jobs/8624410002",
+      "company": "Virtu",
+      "first_seen": "2026-07-27",
+      "location": "New York; Austin, TX",
+      "role": "Software Engineer Intern"
+    },
+    "2fcb02fdc2b19247": {
+      "apply_url": "https://www.amazon.jobs/en/jobs/3136266/robotics-software-development-engineer-intern-co-op-2026?no_int_redir=1",
+      "company": "Amazon",
+      "first_seen": "2026-07-27",
+      "location": "Sunnyvale, CA; North Reading, MA; Westboro, MA",
+      "role": "Robotics - Software Development Engineer Intern/Co-op"
+    },
+    "305f9cf2afdb18d3": {
+      "apply_url": "https://jobs.apple.com/en-us/details/200664320/software-engineering-masters-internships",
+      "company": "Apple",
+      "first_seen": "2026-07-27",
+      "location": "United States",
+      "role": "Software Engineering Intern, Masters"
+    },
+    "3f5169444b52cc10": {
+      "apply_url": "https://boards.greenhouse.io/andurilindustries/jobs/5148079007?gh_jid=5148079007",
+      "company": "Anduril",
+      "first_seen": "2026-07-27",
+      "location": "Boston, MA; Boston, Massachusetts, United States; Atlanta, GA; +3 more",
+      "role": "2027 Software Engineer Intern"
+    },
+    "43478bafede22ed8": {
+      "apply_url": "https://stripe.com/jobs/search?gh_jid=8031833",
+      "company": "Stripe",
+      "first_seen": "2026-07-27",
+      "location": "Bengaluru",
+      "role": "Software Engineer, Intern"
+    },
+    "4675fd26572c4125": {
+      "apply_url": "https://jobs.lever.co/palantir/75cc1c09-8ebd-44c8-b3bc-d122cd1fecb3/apply",
+      "company": "Palantir",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY; Chicago, IL",
+      "role": "Year at Palantir - Forward Deployed Software Engineer, Internship - Commercial"
+    },
+    "487818ca00c68367": {
+      "apply_url": "https://www.workatastartup.com/jobs/94631",
+      "company": "Terranox AI",
+      "first_seen": "2026-07-27",
+      "location": "San Francisco, CA",
+      "role": "Summer Intern - AI/ML Engineering"
+    },
+    "49db08c30cfd4051": {
+      "apply_url": "https://job-boards.greenhouse.io/pdtpartners/jobs/8077685",
+      "company": "PDT Partners",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY",
+      "role": "Software Engineering Intern"
+    },
+    "4aef807184ddc3f7": {
+      "apply_url": "https://accenture.wd103.myworkdayjobs.com/en-GB/AvanadeCareers/job/Los-Angeles-6181-W-Centinela-Ave-Corp/Intern--Software-Engineering---June-2026_R00319370?jr_id=69e6a556f8fa2f3ec32a3173",
+      "company": "Avanade",
+      "first_seen": "2026-07-27",
+      "location": "Seattle, WA; Los Angeles, CA",
+      "role": "Software Engineering Intern"
+    },
+    "4c505fe40795c5ef": {
+      "apply_url": "https://www.workatastartup.com/jobs/94647",
+      "company": "Na\u00efve",
+      "first_seen": "2026-07-27",
+      "location": "San Francisco, CA; Remote",
+      "role": "Software Engineer Intern"
+    },
+    "4d5735f5aa349f2e": {
+      "apply_url": "https://copart.wd12.myworkdayjobs.com/copart/job/Dallas-TX---Headquarters/Software-Engineering-Intern_JR110011",
+      "company": "Copart",
+      "first_seen": "2026-07-27",
+      "location": "Dallas, TX",
+      "role": "Software Engineering Intern"
+    },
+    "4dc63836f7309d52": {
+      "apply_url": "https://akunacapital.com/careers/job/8018893/?gh_jid=8018893",
+      "company": "Akuna Capital",
+      "first_seen": "2026-07-27",
+      "location": "Chicago, IL",
+      "role": "Software Engineer Intern, Full Stack Web"
+    },
+    "5162ae578cab83c0": {
+      "apply_url": "https://jobs.lever.co/zoox/019b636a-23c9-4366-90fd-5a95ad9e5049/apply",
+      "company": "Zoox",
+      "first_seen": "2026-07-27",
+      "location": "Foster City, CA",
+      "role": "Part-Time Student Worker \u2013 Software Development Engineer in Test"
+    },
+    "53727c7f8458a585": {
+      "apply_url": "https://www.workatastartup.com/jobs/94620",
+      "company": "Trata",
+      "first_seen": "2026-07-27",
+      "location": "San Francisco, CA; New York, NY",
+      "role": "Research Scientist Intern"
+    },
+    "55d0ec9bcafa5bd2": {
+      "apply_url": "https://apply.workable.com/hyperlight/j/5581EA0668/",
+      "company": "HyperLight",
+      "first_seen": "2026-07-27",
+      "location": "Cambridge, MA",
+      "role": "Software Engineer Intern"
+    },
+    "5f7f9bd025790040": {
+      "apply_url": "https://jobs.ashbyhq.com/deepgram/dc8693b5-72ce-4ca3-ab15-9c8434d35da1",
+      "company": "Deepgram",
+      "first_seen": "2026-07-27",
+      "location": "Remote; US",
+      "role": "Software Engineering Intern"
+    },
+    "610614153c7a4c21": {
+      "apply_url": "https://career41.sapsf.com/career?career_ns=job_listing&company=hcollp&career_job_req_id=3507",
+      "company": "H&CO",
+      "first_seen": "2026-07-27",
+      "location": "Coral Gables, FL",
+      "role": "Software Development Intern"
+    },
+    "626c9768a458761e": {
+      "apply_url": "https://www.stokespace.com/careers/current-openings/?gh_jid=5987663004&jr_id=69fae0acd21cf86d1e3cd79c",
+      "company": "Stoke Space",
+      "first_seen": "2026-07-27",
+      "location": "Kent, WA",
+      "role": "Software Engineer Intern"
+    },
+    "63b68ee7063de47a": {
+      "apply_url": "https://www.imc.com/us/careers/jobs/4823924101",
+      "company": "IMC",
+      "first_seen": "2026-07-27",
+      "location": "Chicago, IL",
+      "role": "Software Engineer Intern"
+    },
+    "66e1bb31e95b5bec": {
+      "apply_url": "https://apply.workable.com/al-warren-oil-company-inc/j/A4487B349D/",
+      "company": "Al Warren Oil Company",
+      "first_seen": "2026-07-27",
+      "location": "Bensenville, IL",
+      "role": "Software Developer Intern"
+    },
+    "6c4c7475db4513eb": {
+      "apply_url": "https://jobs.ashbyhq.com/Etched/aa17bfa2-2922-4aa7-820d-76064f2551a8",
+      "company": "Etched",
+      "first_seen": "2026-07-27",
+      "location": "San Jose, CA",
+      "role": "Inference Intern, Architecture"
+    },
+    "73db4ece4d574fc7": {
+      "apply_url": "https://job-boards.eu.greenhouse.io/veeamsoftware/jobs/4857832101",
+      "company": "Veeam Software",
+      "first_seen": "2026-07-27",
+      "location": "San Jose, CA",
+      "role": "Software Engineering Intern, Platform, Security & AI"
+    },
+    "81f42b481d3f69c7": {
+      "apply_url": "https://www.optiver.com/join-us/jobs/technology/austin/software-engineer-intern-summer-2027-austin/",
+      "company": "Optiver",
+      "first_seen": "2026-07-27",
+      "location": "Austin, TX; Chicago, IL",
+      "role": "Software Engineer Intern"
+    },
+    "85e32e5ebb33fc76": {
+      "apply_url": "https://www.janestreet.com/join-jane-street/position/8611307002/",
+      "company": "Jane Street",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY",
+      "role": "Machine Learning Engineer Intern"
+    },
+    "8765f88d0910073c": {
+      "apply_url": "https://jobs.ashbyhq.com/perplexity/79a07e2d-6150-4929-80fe-bbe13a641763/application",
+      "company": "Perplexity",
+      "first_seen": "2026-07-27",
+      "location": "London",
+      "role": "AI Inference Internship "
+    },
+    "87c72f2ff745a929": {
+      "apply_url": "https://www.oldmissioncapital.com/careers/?gh_jid=7796180003",
+      "company": "Old Mission",
+      "first_seen": "2026-07-27",
+      "location": "Chicago, IL",
+      "role": "Software Engineer Intern"
+    },
+    "8b6eaa57d341d04c": {
+      "apply_url": "https://jobs.lever.co/palantir/d582cd84-14fd-4aa3-b413-15982d286bd9/apply",
+      "company": "Palantir",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY",
+      "role": "Forward Deployed Software Engineer, Internship - Poland"
+    },
+    "8e33c4faae3e57e3": {
+      "apply_url": "https://boards.greenhouse.io/andurilindustries/jobs/5162263007?gh_jid=5162263007",
+      "company": "Anduril",
+      "first_seen": "2026-07-27",
+      "location": "Boston, Massachusetts, United States; Atlanta, Georgia, United States; Costa Mesa, California, United States",
+      "role": "2027 Early Career Software Engineer "
+    },
+    "9784168c139d3e05": {
+      "apply_url": "https://jobs.ashbyhq.com/Etched/80926a71-0a62-4bf8-a877-b6d96df279b7",
+      "company": "Etched",
+      "first_seen": "2026-07-27",
+      "location": "San Jose, CA",
+      "role": "Infrastructure Intern"
+    },
+    "9a920b8156ef393d": {
+      "apply_url": "https://jobs.lever.co/palantir/1b6f1d82-d459-4dea-8bc2-8d2ffe6f881a/apply",
+      "company": "Palantir",
+      "first_seen": "2026-07-27",
+      "location": "Paris, France",
+      "role": "Forward Deployed Software Engineer, Internship"
+    },
+    "9f1b63e187335428": {
+      "apply_url": "https://emit.fa.ca3.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_2001/job/86808",
+      "company": "WSP",
+      "first_seen": "2026-07-27",
+      "location": "Dallas, TX",
+      "role": "Software Developer Intern"
+    },
+    "a2a211c51eac99da": {
+      "apply_url": "https://job-boards.greenhouse.io/aquaticcapitalmanagement/jobs/8489233002",
+      "company": "Aquatic",
+      "first_seen": "2026-07-27",
+      "location": "Chicago, IL",
+      "role": "Software Engineer Intern"
+    },
+    "a63d818a9c15c7ed": {
+      "apply_url": "https://www.janestreet.com/join-jane-street/position/8599644002/",
+      "company": "Jane Street",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY",
+      "role": "Software Engineer Intern"
+    },
+    "a9e4a38d49cfd91a": {
+      "apply_url": "https://jobs.lever.co/palantir/9e40d77f-b07c-437b-98e7-def9b0184d89/apply",
+      "company": "Palantir",
+      "first_seen": "2026-07-27",
+      "location": "Washington, D.C.",
+      "role": "Forward Deployed Software Engineer, Internship - Intel"
+    },
+    "ac3ca09cad6f715b": {
+      "apply_url": "https://jobs.lever.co/palantir/395a4483-fc3d-4b77-a500-501923fd0976/apply",
+      "company": "Palantir",
+      "first_seen": "2026-07-27",
+      "location": "Sydney, Australia",
+      "role": "Forward Deployed Software Engineer, Internship - AUS Government"
+    },
+    "b02ff28dc61dd486": {
+      "apply_url": "https://ngc.wd1.myworkdayjobs.com/northrop_grumman_external_site/job/United-States-Florida-Melbourne/XMLNAME-2027-Intern-Software-Engineer_R10239275",
+      "company": "Northrop Grumman",
+      "first_seen": "2026-07-27",
+      "location": "Melbourne, FL",
+      "role": "Software Engineer Intern"
+    },
+    "b0beea31c2f7e817": {
+      "apply_url": "https://akunacapital.com/careers/job/8018853/?gh_jid=8018853",
+      "company": "Akuna Capital",
+      "first_seen": "2026-07-27",
+      "location": "Chicago, IL",
+      "role": "Python Software Engineer Intern"
+    },
+    "bf1c5bbec2058c58": {
+      "apply_url": "https://jobs.lever.co/palantir/7d69cf8a-06fd-4f05-bd84-27149db29c4d",
+      "company": "Palantir",
+      "first_seen": "2026-07-27",
+      "location": "Palo Alto, CA; New York, NY; Washington, D.C.",
+      "role": "Software Engineer Intern"
+    },
+    "c3cf1e3460fc8141": {
+      "apply_url": "https://jobs.lever.co/palantir/d5486403-c050-4920-b2e0-91b69b61ebb2/apply",
+      "company": "Palantir",
+      "first_seen": "2026-07-27",
+      "location": "Chicago, IL",
+      "role": "Forward Deployed Software Engineer, Internship - Commercial"
+    },
+    "c95f2895d444ff8a": {
+      "apply_url": "https://jobs.lever.co/palantir/373367a9-3160-49d8-b7af-2efec062fad1",
+      "company": "Palantir",
+      "first_seen": "2026-07-27",
+      "location": "Seattle, WA",
+      "role": "Software Engineer Intern, Production Infrastructure"
+    },
+    "cbea228315634602": {
+      "apply_url": "https://job-boards.eu.greenhouse.io/veeamsoftware/jobs/4857828101",
+      "company": "Veeam Software",
+      "first_seen": "2026-07-27",
+      "location": "San Jose, CA",
+      "role": "Software Engineering Intern, Policy Engineering"
+    },
+    "cecf471b2e972e54": {
+      "apply_url": "https://intel.wd1.myworkdayjobs.com/external/job/US-Oregon-Hillsboro/AI-Applied-intern_JR0285916",
+      "company": "Intel",
+      "first_seen": "2026-07-27",
+      "location": "Hillsboro, OR",
+      "role": "AI Software Engineering PhD Intern"
+    },
+    "d01b39430a138497": {
+      "apply_url": "https://jobs.lever.co/palantir/655f9937-a4ce-4e7d-80e2-a6659af07329/apply",
+      "company": "Palantir",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY",
+      "role": "Year at Palantir - Software Engineer, Internship"
+    },
+    "d3970e9019fb55de": {
+      "apply_url": "https://www.deshaw.com/careers/software-developer-intern-new-york-summer-2027-5894",
+      "company": "DE Shaw",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY",
+      "role": "Software Developer Intern"
+    },
+    "d75342480f7503c4": {
+      "apply_url": "https://jobs.ashbyhq.com/poshmark/062b84e6-1633-43ae-870b-83cb62893caa",
+      "company": "Poshmark",
+      "first_seen": "2026-07-27",
+      "location": "Redwood City, CA",
+      "role": "Cloud Platform Engineer Intern, Growth"
+    },
+    "dc56f2d1fdbf8f4a": {
+      "apply_url": "https://databricks.com/company/careers/open-positions/job?gh_jid=7011263002",
+      "company": "Databricks",
+      "first_seen": "2026-07-27",
+      "location": "San Francisco, California",
+      "role": "PhD GenAI Research Scientist Intern"
+    },
+    "ddf8f60c32e78af0": {
+      "apply_url": "https://jobs.apple.com/en-us/details/200664785/software-undergrad-engineering-internships",
+      "company": "Apple",
+      "first_seen": "2026-07-27",
+      "location": "United States",
+      "role": "Software Engineer Intern, Undergrad"
+    },
+    "de9a9d6765b2ac65": {
+      "apply_url": "https://akunacapital.com/careers/job/8018847/?gh_jid=8018847",
+      "company": "Akuna Capital",
+      "first_seen": "2026-07-27",
+      "location": "Chicago, IL",
+      "role": "Software Engineer Intern, C++"
+    },
+    "e01fc65b7d176ece": {
+      "apply_url": "https://www.workatastartup.com/jobs/94634",
+      "company": "Abundant",
+      "first_seen": "2026-07-27",
+      "location": "San Francisco, CA",
+      "role": "Software Engineering Intern, Research Focused"
+    },
+    "e11e1f40f35a75a9": {
+      "apply_url": "https://job-boards.greenhouse.io/fiveringsllc/jobs/5349707008",
+      "company": "Five Rings",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY",
+      "role": "Software Developer Intern"
+    },
+    "ec3ef8de55176c1e": {
+      "apply_url": "https://www.citadel.com/careers/details/software-engineer-intern-us/",
+      "company": "Citadel",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY; Greenwich, CT; Miami, FL",
+      "role": "Software Engineer Intern"
+    },
+    "ed05f58f3b8c97b6": {
+      "apply_url": "https://tetramem.hrmdirect.com/employment/job-opening.php?req=3491042#job",
+      "company": "TETRAMEM",
+      "first_seen": "2026-07-27",
+      "location": "San Jose, CA",
+      "role": "Software Engineer Intern, Embedded"
+    },
+    "ed32bcda7263f734": {
+      "apply_url": "https://jobs.ashbyhq.com/quadrillion-labs/a4acc44c-31ce-41a0-ab44-2500487b4d05",
+      "company": "Quadrillion Labs",
+      "first_seen": "2026-07-27",
+      "location": "New York, NY",
+      "role": "Software Engineering Intern"
+    },
+    "ed44615dc87776dc": {
+      "apply_url": "https://akunacapital.com/careers/job/8018856/?gh_jid=8018856",
+      "company": "Akuna Capital",
+      "first_seen": "2026-07-27",
+      "location": "Chicago, IL",
+      "role": "Platform Engineer Intern"
+    },
+    "f2f71f66d04f72c0": {
+      "apply_url": "https://www.jumptrading.com/hr/job?gh_jid=8003019",
+      "company": "Jump Trading",
+      "first_seen": "2026-07-27",
+      "location": "Chicago, IL",
+      "role": "Campus UI Software Engineer Intern"
+    },
+    "fa9c4d3b4c92a96d": {
+      "apply_url": "https://www.jumptrading.com/hr/job?gh_jid=8002989",
+      "company": "Jump Trading",
+      "first_seen": "2026-07-27",
+      "location": "Chicago, IL",
+      "role": "Software Engineer Intern"
+    }
+  },
+  "version": 1
 }
