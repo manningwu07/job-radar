@@ -7,9 +7,11 @@ import pytest
 from radar.models import Job, Platform, Season, Source, join_locations
 from radar.triage import (
     MAX_POSTING_AGE_DAYS,
+    Country,
     GeoTier,
     RoleCategory,
     categorize,
+    classify_location,
     is_relevant,
     merge_duplicates,
     sort_key,
@@ -37,7 +39,6 @@ def make_job(
     source: Source = Source.GREENHOUSE,
     platform: Platform = Platform.GREENHOUSE,
     season: Season | None = None,
-    notes: str = "",
 ) -> Job:
     return Job(
         company=company,
@@ -50,7 +51,6 @@ def make_job(
         apply_url=apply_url,
         careers_url="https://example.com/careers",
         platform=platform,
-        notes=notes,
         season=season,
     )
 
@@ -118,6 +118,34 @@ def test_mobile_only_rejected_but_mobile_mention_accepted() -> None:
     assert is_relevant(make_job("Software Engineering Intern, Mobile Infrastructure"))
 
 
+@pytest.mark.parametrize(
+    "role",
+    [
+        "Part-Time Student Worker – Software Development Engineer in Test",
+        "Software Engineer in Test Intern",
+        "Software Engineer, Test - Internship",
+        "Software Engineer - Test (Intern)",
+    ],
+)
+def test_rejects_the_spelled_out_sdet_title(role: str) -> None:
+    assert not is_relevant(make_job(role, company="Zoox"))
+
+
+@pytest.mark.parametrize(
+    "role",
+    [
+        "Software Engineer Intern, Test Infrastructure",
+        "Developer Productivity Intern - Build and Test Infra",
+        "Software Engineering Intern, Test Platform",
+        "Software Engineer in Test Infrastructure Intern",
+    ],
+)
+def test_accepts_test_infrastructure_roles(role: str) -> None:
+    """Testing is the whole job only when `test` sits against `engineer` with nothing
+    broader named. Building the systems others test on is work the user asked for."""
+    assert is_relevant(make_job(role))
+
+
 def test_security_only_rejected_but_security_infra_accepted() -> None:
     assert not is_relevant(make_job("Security Engineering Intern"))
     assert is_relevant(make_job("Software Engineering Intern, Security Infrastructure"))
@@ -135,6 +163,164 @@ def test_security_only_rejected_but_security_infra_accepted() -> None:
 )
 def test_rejects_non_internship_levels_even_when_intern_appears(role: str) -> None:
     assert not is_relevant(make_job(role))
+
+
+US_LOCATIONS = [
+    "Mountain View, CA",
+    "Foster City, CA",
+    "San Francisco, California",
+    "Atlanta, Georgia, United States",
+    "United States",
+    "US",
+    "US / Canada",
+    "Washington, D.C.",
+    "Honolulu, HI",
+    "Indianapolis, Indiana",
+    "Albuquerque, New Mexico",
+    "Vancouver, WA",
+    "Melbourne, FL",
+    "Brisbane, CA",
+    "Cambridge, MA",
+    "Dublin, CA",
+]
+FOREIGN_LOCATIONS = [
+    "Bengaluru",
+    "Bengaluru, India",
+    "Bengaluru, IN",
+    "Toronto, Canada",
+    "Toronto, ON, Canada",
+    "Toronto, CA",
+    "Vancouver, BC",
+    "Paris, France",
+    "Sydney, Australia",
+    "Belgrade, Serbia",
+    "London",
+    "London, United Kingdom",
+    "Melbourne, Australia",
+    "Cambridge, United Kingdom",
+]
+UNRECOGNIZED_LOCATIONS = [
+    "Remote",
+    "Remote or hybrid",
+    "Unspecified",
+    "Springfield",
+    "",
+]
+
+
+@pytest.mark.parametrize("location", US_LOCATIONS)
+def test_classifies_us_locations(location: str) -> None:
+    assert classify_location(location) is Country.UNITED_STATES
+
+
+@pytest.mark.parametrize("location", FOREIGN_LOCATIONS)
+def test_classifies_foreign_locations(location: str) -> None:
+    """`Bengaluru, IN` and `Toronto, CA` are the abbreviation trap: a spelled-out foreign
+    place outranks a two-letter code that a US state and another country share."""
+    assert classify_location(location) is Country.FOREIGN
+
+
+@pytest.mark.parametrize("location", UNRECOGNIZED_LOCATIONS)
+def test_unrecognized_locations_are_not_classified_either_way(location: str) -> None:
+    """`or` and `in` are ordinary English words as well as state codes, so a code only
+    counts as a whole comma-separated field."""
+    assert classify_location(location) is Country.UNKNOWN
+
+
+@pytest.mark.parametrize("location", US_LOCATIONS + UNRECOGNIZED_LOCATIONS)
+def test_accepts_us_and_unstated_locations(location: str) -> None:
+    assert is_relevant(make_job("Software Engineering Intern", location=location))
+
+
+@pytest.mark.parametrize("location", FOREIGN_LOCATIONS)
+def test_rejects_a_posting_with_no_us_location(location: str) -> None:
+    assert not is_relevant(make_job("Software Engineering Intern", location=location))
+
+
+def test_a_us_namesake_of_a_foreign_city_is_kept_when_its_state_is_given() -> None:
+    """Northrop Grumman hires in Melbourne, FL and Brisbane, CA is in the Bay Area, so a
+    city name alone never overrules the state beside it."""
+    for location in ("Melbourne, FL", "Brisbane, CA"):
+        assert is_relevant(make_job("Software Engineer Intern", location=location))
+    assert not is_relevant(make_job("Software Engineer Intern", location="Melbourne, Australia"))
+
+
+def test_rejects_a_london_only_posting() -> None:
+    perplexity = make_job(
+        "Internship - Search Machine Learning Engineer",
+        company="Perplexity",
+        location="London",
+    )
+    assert not is_relevant(perplexity)
+
+
+def test_rejects_the_bengaluru_requisition() -> None:
+    stripe = make_job("Software Engineer, Intern", company="Stripe", location="Bengaluru")
+    assert not is_relevant(stripe)
+
+
+def test_rejects_a_foreign_country_named_only_in_the_role_title() -> None:
+    """Palantir advertises its Poland and France internships with a US board location."""
+    for country in ("Poland", "France"):
+        role = f"Forward Deployed Software Engineer, Internship - {country}"
+        assert not is_relevant(make_job(role, company="Palantir", location="New York, NY"))
+
+
+def test_keeps_the_us_sibling_of_a_country_specific_requisition() -> None:
+    us_government = make_job(
+        "Forward Deployed Software Engineer, Internship - US Government",
+        company="Palantir",
+        location="Honolulu, HI",
+    )
+    assert is_relevant(us_government)
+
+
+def test_keeps_a_posting_that_lists_both_us_and_foreign_locations() -> None:
+    mixed = make_job(
+        "Software Engineer, Internship",
+        company="Palantir",
+        location="Palo Alto, CA; Warsaw, Poland",
+    )
+    assert is_relevant(mixed)
+    assert merge_duplicates([mixed]).location == "Palo Alto, CA"
+
+
+def test_merge_strips_foreign_cities_from_the_location_cell() -> None:
+    palo_alto = make_job("Software Engineer, Internship", location="Palo Alto, CA")
+    warsaw = make_job("Software Engineer, Internship", location="Warsaw, Poland")
+    merged = merge_duplicates([palo_alto, warsaw])
+    assert split_locations(merged.location) == ["Palo Alto, CA"]
+
+
+GRADUATE_ONLY_ROLES = [
+    "PhD GenAI Research Scientist Intern",
+    "Software Engineering Intern, Masters",
+    "Machine Learning Intern, PhD",
+    "Ph.D. Software Engineering Intern",
+    "Software Engineering Intern, MS/PhD",
+    "Doctoral Research Engineering Intern",
+    "Software Engineering Intern for Graduate Students",
+    "Postgraduate Machine Learning Internship",
+]
+UNDERGRADUATE_ELIGIBLE_ROLES = [
+    "Software Engineer Intern, Undergrad",
+    "Software Engineering Intern",
+    "Software Engineering Intern (BS/MS)",
+    "Machine Learning Intern - open to Bachelors, Masters and PhD students",
+    "Software Engineering Intern, Undergraduate and Masters",
+]
+
+
+@pytest.mark.parametrize("role", GRADUATE_ONLY_ROLES)
+def test_rejects_graduate_exclusive_internships(role: str) -> None:
+    assert not is_relevant(make_job(role))
+
+
+@pytest.mark.parametrize("role", UNDERGRADUATE_ELIGIBLE_ROLES)
+def test_accepts_undergraduate_eligible_internships(role: str) -> None:
+    """A title naming a graduate degree alongside an undergraduate one is open to both,
+    and a title naming no degree at all is the unstated majority."""
+    assert is_relevant(make_job(role))
 
 
 def test_accepts_target_season_and_unstated_season() -> None:
@@ -214,7 +400,6 @@ def test_rejects_non_summer_season_field(season: Season) -> None:
         "Software Engineer Intern, Service Engineering",
         company="Tesla",
         season=season,
-        notes=f"Sponsorship: Other; Season: {season.value}",
     )
     assert not is_relevant(fall_req)
 
@@ -397,21 +582,18 @@ def test_merge_prefers_the_first_party_ats_url_over_simplify() -> None:
         source=Source.SIMPLIFY,
         platform=Platform.OTHER,
         apply_url="https://simplify.jobs/p/abc/software-engineering-intern",
-        notes="via Simplify",
     )
     ats = make_job(
         "Software Engineering Intern",
         source=Source.GREENHOUSE,
         platform=Platform.GREENHOUSE,
         apply_url="https://boards.greenhouse.io/anduril/jobs/5148079007",
-        notes="",
     )
     for group in ([simplify, ats], [ats, simplify]):
         merged = merge_duplicates(group)
         assert merged.apply_url == ats.apply_url
         assert merged.source is Source.GREENHOUSE
         assert merged.platform is Platform.GREENHOUSE
-        assert merged.notes == ""
 
 
 def test_merge_prefers_the_url_without_query_parameters() -> None:
@@ -461,7 +643,6 @@ def test_merge_takes_every_url_bound_field_from_one_record() -> None:
         apply_url="https://jobs.lever.co/palantir/7d69cf8a",
         careers_url="https://jobs.lever.co/palantir",
         platform=Platform.LEVER,
-        notes="Lever board",
     )
     aggregated = Job(
         company="Palantir",
@@ -474,13 +655,11 @@ def test_merge_takes_every_url_bound_field_from_one_record() -> None:
         apply_url="https://simplify.jobs/p/xyz",
         careers_url="https://www.palantir.com/careers",
         platform=Platform.OTHER,
-        notes="via Simplify",
     )
     merged = merge_duplicates([aggregated, lever])
-    assert (merged.source, merged.platform, merged.notes, merged.careers_url) == (
+    assert (merged.source, merged.platform, merged.careers_url) == (
         lever.source,
         lever.platform,
-        lever.notes,
         lever.careers_url,
     )
     assert merged.apply_url == lever.apply_url

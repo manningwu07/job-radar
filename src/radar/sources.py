@@ -195,7 +195,6 @@ class SimplifyPosting(TypedDict, total=False):
     url: str
     is_visible: bool
     locations: list[str]
-    sponsorship: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,7 +207,6 @@ class _JobFields:
     apply_url: str
     careers_url: str
     platform: Platform
-    notes: str
     description: str
     season: Season | None = None
 
@@ -293,7 +291,6 @@ def _build_job(fields: _JobFields, locations: Sequence[str]) -> Job:
         apply_url=fields.apply_url,
         careers_url=fields.careers_url,
         platform=fields.platform,
-        notes=fields.notes,
         season=fields.season,
     )
 
@@ -309,7 +306,6 @@ def _greenhouse_job(board: Board, posting: GreenhousePosting, found_at: date) ->
         apply_url=posting["absolute_url"],
         careers_url=board.careers_url,
         platform=board.platform,
-        notes="",
         description=_clean_description(posting.get("content", "")),
     )
     return _build_job(fields, _locations_from_text(location))
@@ -345,7 +341,6 @@ def _lever_job(board: Board, posting: LeverPosting, found_at: date) -> Job:
         apply_url=posting.get("applyUrl", posting["hostedUrl"]),
         careers_url=board.careers_url,
         platform=board.platform,
-        notes="",
         description=f"{posting.get('descriptionPlain', '')} {workplace_type}",
     )
     return _build_job(fields, _lever_locations(posting))
@@ -380,7 +375,6 @@ def _ashby_job(board: Board, posting: AshbyPosting, found_at: date) -> Job:
         apply_url=posting.get("applyUrl", posting["jobUrl"]),
         careers_url=board.careers_url,
         platform=board.platform,
-        notes="",
         description=(
             f"{posting.get('descriptionPlain', '')} {posting.get('workplaceType', '')}"
         ),
@@ -416,7 +410,6 @@ def _smartrecruiters_job(
         ),
         careers_url=board.careers_url,
         platform=board.platform,
-        notes="",
         description=remote_indicator,
     )
     return _build_job(fields, _locations_from_text(location))
@@ -472,7 +465,6 @@ def _workday_job(
         ),
         careers_url=board.careers_url,
         platform=board.platform,
-        notes="",
         description="",
     )
     return _build_job(
@@ -529,20 +521,6 @@ def fetch_board(board: Board, session: requests.Session, found_at: date) -> list
     return fetcher(board, session, found_at)
 
 
-def _simplify_notes(posting: SimplifyPosting) -> str:
-    notes: list[str] = []
-    sponsorship = posting.get("sponsorship")
-    if sponsorship:
-        notes.append(f"Sponsorship: {sponsorship}")
-    terms = posting.get("terms", [])
-    season = posting.get("season")
-    if terms:
-        notes.append(f"Terms: {', '.join(terms)}")
-    elif season:
-        notes.append(f"Season: {season}")
-    return "; ".join(notes)
-
-
 def _parse_season_label(label: str) -> Season | None:
     words = set(re.findall(r"[a-z]+", label.casefold()))
     matches = [season for season in Season if season.value.casefold() in words]
@@ -576,7 +554,6 @@ def _simplify_job(posting: SimplifyPosting, found_at: date) -> Job:
         apply_url=posting["url"],
         careers_url=posting.get("company_url", ""),
         platform=platform_from_application_url(posting["url"]),
-        notes=_simplify_notes(posting),
         description="",
         season=_simplify_season(posting),
     )

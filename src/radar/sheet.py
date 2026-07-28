@@ -130,9 +130,11 @@ def _ensure_headers(worksheet: gspread.Worksheet) -> None:
         return
     if any(cell.strip() for cell in header):
         raise SheetError(
-            "Header row does not match the expected schema. "
-            f"Found: {header!r}. Expected: {SHEET_HEADERS!r}. "
-            "Fix or clear row 1 - job-radar will not overwrite it."
+            f"Row 1 of worksheet {WORKSHEET_TITLE!r} does not match the expected schema. "
+            f"Found {len(header)} columns: {header!r}. "
+            f"Expected {len(SHEET_HEADERS)} columns: {SHEET_HEADERS!r}. "
+            "job-radar will not overwrite row 1. Either correct it in place, or delete the "
+            "whole worksheet and let the next run rebuild it, which discards its contents."
         )
 
     _widen_to_headers(worksheet)

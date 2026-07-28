@@ -3,9 +3,11 @@
 Exports:
     RoleCategory -- interest areas, value is the user's priority (lower sorts first).
     GeoTier -- geographic preference.
+    Country -- whether a location segment is somewhere the user can work.
     SortKey -- the ranking key `sort_key` returns.
     target_summer_year -- the summer the user is currently recruiting for.
-    is_relevant -- level, interest-area, reject-rule, freshness and season gate for one posting.
+    classify_location -- place one location segment as US, foreign or unrecognized.
+    is_relevant -- level, degree, country, interest-area, freshness and season gate.
     merge_duplicates -- collapse records sharing a `Job.key` into one well-formed row.
     sort_key -- ascending ranking key.
     triage -- filter, merge duplicates, then sort.
@@ -48,6 +50,14 @@ class GeoTier(IntEnum):
     BOSTON = 3
     REMOTE = 4
     OTHER = 5
+
+
+class Country(Enum):
+    """Whether one location segment is somewhere the user can work."""
+
+    UNITED_STATES = "united states"
+    FOREIGN = "foreign"
+    UNKNOWN = "unknown"
 
 
 class SortKey(NamedTuple):
@@ -205,6 +215,12 @@ QA_REJECT_KEYWORDS = frozenset(
         "manual testing",
     }
 )
+# `SDET` spelled out, in the separator forms boards actually use: `Software Development
+# Engineer in Test`, `Software Engineer, Test`, `Software Engineer - Test`. Testing is the
+# whole job only when `test` sits directly against `engineer`; everywhere else the word
+# qualifies something broader, as in `Test Infrastructure`, so this is checked as a narrow
+# scope that a broader-scope keyword anywhere in the title overrides.
+ENGINEER_IN_TEST_PATTERN = re.compile(r"\bengineer\s*(?:in|,|-|/)\s*test\b")
 QUANT_REJECT_KEYWORDS = frozenset(
     {
         "quant research",
@@ -234,6 +250,47 @@ LEVEL_REJECT_KEYWORDS = frozenset(
     }
 )
 TRADING_KEYWORDS = frozenset({"trading", "trader"})
+
+GRADUATE_DEGREE_KEYWORDS = frozenset(
+    {
+        "phd",
+        "phds",
+        "doctoral",
+        "doctorate",
+        "master",
+        "masters",
+        "ms",
+        "msc",
+        "meng",
+        "mba",
+        "graduate degree",
+        "graduate intern",
+        "graduate internship",
+        "graduate student",
+        "graduate students",
+        "grad student",
+        "grad students",
+        "postgraduate",
+        "post-graduate",
+        "postgrad",
+    }
+)
+UNDERGRADUATE_DEGREE_KEYWORDS = frozenset(
+    {
+        "undergrad",
+        "undergrads",
+        "undergraduate",
+        "undergraduates",
+        "bachelor",
+        "bachelors",
+        "ba",
+        "bs",
+        "bsc",
+        "beng",
+        "freshman",
+        "sophomore",
+    }
+)
 
 FRONTEND_SCOPE_KEYWORDS = frozenset(
     {
@@ -307,6 +364,87 @@ NEW_YORK_KEYWORDS = frozenset({"new york", "nyc", "manhattan", "brooklyn"})
 BOSTON_KEYWORDS = frozenset({"boston", "cambridge", "somerville"})
 REMOTE_KEYWORDS = frozenset({"remote", "anywhere", "distributed team"})
 
+US_STATE_NAMES = frozenset(
+    {
+        "alabama", "alaska", "arizona", "arkansas", "california", "colorado",
+        "connecticut", "delaware", "florida", "georgia", "hawaii", "idaho",
+        "illinois", "indiana", "iowa", "kansas", "kentucky", "louisiana", "maine",
+        "maryland", "massachusetts", "michigan", "minnesota", "mississippi",
+        "missouri", "montana", "nebraska", "nevada", "new hampshire", "new jersey",
+        "new mexico", "new york", "north carolina", "north dakota", "ohio",
+        "oklahoma", "oregon", "pennsylvania", "rhode island", "south carolina",
+        "south dakota", "tennessee", "texas", "utah", "vermont", "virginia",
+        "washington", "west virginia", "wisconsin", "wyoming",
+        "district of columbia", "puerto rico",
+    }
+)
+US_COUNTRY_NAMES = frozenset({"united states", "united states of america", "usa", "us"})
+US_STATE_CODES = frozenset(
+    {
+        "al", "ak", "az", "ar", "ca", "co", "ct", "de", "fl", "ga", "hi", "id",
+        "il", "in", "ia", "ks", "ky", "la", "me", "md", "ma", "mi", "mn", "ms",
+        "mo", "mt", "ne", "nv", "nh", "nj", "nm", "ny", "nc", "nd", "oh", "ok",
+        "or", "pa", "ri", "sc", "sd", "tn", "tx", "ut", "vt", "va", "wa", "wv",
+        "wi", "wy", "dc", "pr",
+    }
+)
+US_LOCATION_CODES = US_STATE_CODES | frozenset({"us", "usa"})
+
+FOREIGN_COUNTRY_NAMES = frozenset(
+    {
+        "canada", "mexico", "united kingdom", "uk", "england", "scotland", "wales",
+        "ireland", "france", "germany", "netherlands", "belgium", "luxembourg",
+        "switzerland", "austria", "spain", "portugal", "italy", "greece", "poland",
+        "czechia", "czech republic", "slovakia", "hungary", "romania", "bulgaria",
+        "serbia", "croatia", "slovenia", "ukraine", "lithuania", "latvia",
+        "estonia", "finland", "sweden", "norway", "denmark", "iceland", "israel",
+        "turkey", "united arab emirates", "uae", "saudi arabia", "qatar", "egypt",
+        "kenya", "nigeria", "ghana", "south africa", "india", "pakistan",
+        "bangladesh", "sri lanka", "china", "hong kong", "taiwan", "japan",
+        "korea", "south korea", "singapore", "malaysia", "indonesia", "thailand",
+        "vietnam", "philippines", "australia", "new zealand", "brazil",
+        "argentina", "chile", "colombia", "uruguay", "costa rica", "guatemala",
+        "cayman",
+    }
+)
+# Only cities whose foreign namesake is the one an employer on these boards would mean.
+# `Melbourne` and `Brisbane` are absent because Northrop Grumman hires in Melbourne, FL
+# and Brisbane, CA is in the Bay Area; `Cambridge`, `Dublin` and `Vancouver` are absent
+# for the same reason. Those places are still caught when a country or province is given.
+FOREIGN_CITY_NAMES = frozenset(
+    {
+        "ahmedabad", "bangalore", "bengaluru", "chennai", "gurgaon", "gurugram",
+        "hyderabad", "kolkata", "mumbai", "new delhi", "noida", "pune",
+        "haifa", "herzliya", "ramat gan", "tel aviv",
+        "beijing", "chengdu", "guangzhou", "hangzhou", "osaka", "seoul",
+        "shanghai", "shenzhen", "taipei", "tokyo", "yokohama",
+        "bangkok", "cebu", "dhaka", "hanoi", "ho chi minh city", "islamabad",
+        "jakarta", "karachi", "kuala lumpur", "lahore", "manila",
+        "auckland", "canberra", "sydney",
+        "calgary", "edmonton", "markham", "mississauga", "montreal", "ottawa",
+        "quebec city", "toronto", "winnipeg",
+        "belgrade", "bratislava", "brno", "bucharest", "budapest", "gdansk",
+        "krakow", "ljubljana", "poznan", "prague", "riga", "sofia", "tallinn",
+        "vilnius", "warsaw", "wroclaw", "zagreb",
+        "amsterdam", "antwerp", "basel", "brussels", "cologne", "copenhagen",
+        "dusseldorf", "eindhoven", "frankfurt", "geneva", "gothenburg",
+        "helsinki", "lausanne", "leipzig", "munich", "nuremberg", "oslo",
+        "reykjavik", "rotterdam", "stockholm", "stuttgart", "the hague",
+        "utrecht", "zurich",
+        "barcelona", "edinburgh", "glasgow", "leeds", "lisbon", "london", "madrid",
+        "porto", "seville", "turin",
+        "abu dhabi", "almaty", "ankara", "doha", "dubai", "istanbul", "jeddah",
+        "kyiv", "riyadh", "tbilisi", "yerevan",
+        "accra", "cape town", "johannesburg", "lagos", "nairobi",
+        "belo horizonte", "bogota", "buenos aires", "guadalajara", "medellin",
+        "mexico city", "monterrey", "queretaro", "rio de janeiro", "santiago",
+        "sao paulo",
+    }
+)
+FOREIGN_SUBDIVISION_CODES = frozenset(
+    {"ab", "bc", "mb", "nb", "nl", "ns", "nt", "nu", "on", "pe", "qc", "sk", "yt"}
+)
+
 SEASON_ALIASES = {
     "winter": Season.WINTER,
     "spring": Season.SPRING,
@@ -321,7 +459,13 @@ UNDATED_POSTING_RANK = (date.max - date.min).days + 1
 MAX_POSTING_AGE_DAYS = 180
 TRUNCATION_MARKER_PATTERN = re.compile(r"^\+\d+ more$")
 SEGMENT_DELIMITER = LOCATION_SEPARATOR.strip()
+FIELD_DELIMITER = ","
+LOCATION_CODE_LENGTH = 2
 QUERY_MARKER = "?"
+
+# Collapses the dotted and possessive spellings of an abbreviation, so `D.C.` is read as
+# `dc` and `Master's` as `masters` without needing a table entry for every spelling.
+ABBREVIATION_PUNCTUATION = str.maketrans("", "", ".'\u2019")
 
 
 def _matcher(keywords: frozenset[str]) -> re.Pattern[str]:
@@ -341,6 +485,10 @@ _FUNCTION_REJECT_PATTERN = _matcher(
 _LEVEL_REJECT_PATTERN = _matcher(LEVEL_REJECT_KEYWORDS)
 _TRADING_PATTERN = _matcher(TRADING_KEYWORDS)
 _BROADER_SCOPE_PATTERN = _matcher(BROADER_SCOPE_KEYWORDS)
+_GRADUATE_DEGREE_PATTERN = _matcher(GRADUATE_DEGREE_KEYWORDS)
+_UNDERGRADUATE_DEGREE_PATTERN = _matcher(UNDERGRADUATE_DEGREE_KEYWORDS)
+_US_PLACE_PATTERN = _matcher(US_STATE_NAMES | US_COUNTRY_NAMES)
+_FOREIGN_PLACE_PATTERN = _matcher(FOREIGN_COUNTRY_NAMES | FOREIGN_CITY_NAMES)
 
 CATEGORY_PATTERNS: tuple[tuple[RoleCategory, re.Pattern[str]], ...] = (
     (RoleCategory.SOFTWARE_ENGINEERING, _SOFTWARE_ENGINEERING_PATTERN),
@@ -357,6 +505,7 @@ NARROW_SCOPE_PATTERNS: tuple[re.Pattern[str], ...] = (
     _matcher(FRONTEND_SCOPE_KEYWORDS),
     _matcher(MOBILE_SCOPE_KEYWORDS),
     _matcher(SECURITY_SCOPE_KEYWORDS),
+    ENGINEER_IN_TEST_PATTERN,
 )
 
 GEO_PATTERNS: tuple[tuple[GeoTier, re.Pattern[str]], ...] = (
@@ -449,8 +598,87 @@ def _season_allows(job: Job) -> bool:
     return _years_allow(years, dated, target_summer_year(job.found_at))
 
 
+def split_locations(location: str) -> list[str]:
+    """Split a joined location cell into cities, discarding the `+N more` truncation marker."""
+    parts = (part.strip() for part in location.split(SEGMENT_DELIMITER))
+    return [
+        part for part in parts if part and not TRUNCATION_MARKER_PATTERN.match(normalize(part))
+    ]
+
+
+def _is_graduate_only(role: str) -> bool:
+    """True when the title targets graduate candidates and never mentions undergraduates.
+
+    Reject only the graduate-EXCLUSIVE title. A title listing several degrees, such as
+    "open to Bachelors, Masters and PhD students", is undergrad-eligible, and a title
+    stating no degree at all is accepted because most internships take undergraduates and
+    the unstated majority is the bulk of the results.
+    """
+    degrees = normalize(role).translate(ABBREVIATION_PUNCTUATION)
+    if _UNDERGRADUATE_DEGREE_PATTERN.search(degrees):
+        return False
+    return bool(_GRADUATE_DEGREE_PATTERN.search(degrees))
+
+
+def _location_codes(segment: str) -> set[str]:
+    """The comma-separated fields of one segment that are bare two-letter codes.
+
+    A code is only ever read from a whole field, never as a word inside the text, because
+    `CA` also abbreviates Canada and `IN`, `OR`, `ME`, `OK`, `HI` and `DE` are ordinary
+    English words that appear in city names and phrases like "Remote in the US".
+    """
+    fields = (
+        field.strip().translate(ABBREVIATION_PUNCTUATION)
+        for field in segment.split(FIELD_DELIMITER)
+    )
+    return {field for field in fields if len(field) == LOCATION_CODE_LENGTH}
+
+
+def classify_location(segment: str) -> Country:
+    """Place one location segment, resolving the codes that two countries share.
+
+    Order matters. A spelled-out US state or country wins first, so `Albuquerque, New
+    Mexico` is not read as Mexico and `US / Canada` is not read as Canada. A spelled-out
+    foreign place wins next, so `Bengaluru, IN` is India rather than Indiana. Only then is
+    a bare two-letter code trusted, which keeps `Vancouver, WA` in Washington while
+    `Vancouver, BC` goes to British Columbia.
+    """
+    text = normalize(segment)
+    if _US_PLACE_PATTERN.search(text):
+        return Country.UNITED_STATES
+    codes = _location_codes(text)
+    if _FOREIGN_PLACE_PATTERN.search(text) or codes & FOREIGN_SUBDIVISION_CODES:
+        return Country.FOREIGN
+    if codes & US_LOCATION_CODES:
+        return Country.UNITED_STATES
+    return Country.UNKNOWN
+
+
+def _is_us_eligible(job: Job) -> bool:
+    """True unless every place the posting names is outside the US.
+
+    The role title is read as well as the location cell: Palantir advertises its Warsaw
+    and Paris internships as `... Internship - Poland` and `... - France` while the board
+    reports the location as New York, so the title is the only country signal there.
+
+    An unrecognized location is KEPT. Bare `Remote` and a bare city with no country are
+    the common shapes of a US posting that simply did not spell out its country, and
+    these boards are US-company boards, so treating silence as foreign would drop real
+    opportunities to remove a few. A posting is only dropped on positive evidence.
+    """
+    if _FOREIGN_PLACE_PATTERN.search(normalize(job.role)):
+        return False
+    countries = {classify_location(segment) for segment in split_locations(job.location)}
+    if Country.UNITED_STATES in countries:
+        return True
+    return Country.FOREIGN not in countries
+
+
 def _is_narrow_scope_only(role: str) -> bool:
-    """True when the role is scoped to frontend, mobile or security and nothing broader."""
+    """True when the role is scoped to frontend, mobile, security or testing and nothing
+    broader. `Software Engineer Intern, Test Infrastructure` names infrastructure, which
+    is work the user wants, so it survives on the same rule that keeps a role mentioning
+    React among many things."""
     if _BROADER_SCOPE_PATTERN.search(role):
         return False
     return any(pattern.search(role) for pattern in NARROW_SCOPE_PATTERNS)
@@ -474,13 +702,17 @@ def _is_fresh(posted_at: date | None, found_at: date) -> bool:
 
 
 def is_relevant(job: Job) -> bool:
-    """True when the posting is a fresh internship in one of the user's interest areas."""
+    """True for a fresh US undergraduate summer internship in one of the interest areas."""
     role = normalize(job.role)
     if not _INTERNSHIP_PATTERN.search(role):
         return False
     if categorize(role) is RoleCategory.OTHER:
         return False
     if _is_rejected(role):
+        return False
+    if _is_graduate_only(role):
+        return False
+    if not _is_us_eligible(job):
         return False
     if not _is_fresh(job.posted_at, job.found_at):
         return False
@@ -492,14 +724,6 @@ def _posting_rank(posted_at: date | None) -> int:
     if posted_at is None:
         return UNDATED_POSTING_RANK
     return (date.max - posted_at).days
-
-
-def split_locations(location: str) -> list[str]:
-    """Split a joined location cell into cities, discarding the `+N more` truncation marker."""
-    parts = (part.strip() for part in location.split(SEGMENT_DELIMITER))
-    return [
-        part for part in parts if part and not TRUNCATION_MARKER_PATTERN.match(normalize(part))
-    ]
 
 
 def _segment_tier(segment: str) -> GeoTier:
@@ -555,7 +779,11 @@ def _role_informativeness(job: Job) -> tuple[int, int, str]:
 
 
 def _merged_locations(jobs: Sequence[Job]) -> list[str]:
-    """Union every city across the group, first spelling of a repeat wins.
+    """Union the US and unrecognized cities across the group, first spelling of a repeat wins.
+
+    Foreign cities are dropped rather than shown. A posting open in both Palo Alto and
+    Warsaw survives the US filter on its Palo Alto seat, and the user should not be reading
+    Warsaw in a row they are meant to act on.
 
     Cities are ordered by geographic preference so that the three `join_locations` shows are
     the three the user cares most about, and so the cell does not depend on the order the
@@ -564,7 +792,8 @@ def _merged_locations(jobs: Sequence[Job]) -> list[str]:
     merged: dict[str, str] = {}
     for job in jobs:
         for city in split_locations(job.location):
-            merged.setdefault(normalize(city), city)
+            if classify_location(city) is not Country.FOREIGN:
+                merged.setdefault(normalize(city), city)
     ordered = sorted(merged, key=lambda city: (_segment_tier(city), city))
     return [merged[city] for city in ordered]
 
@@ -585,9 +814,8 @@ def merge_duplicates(jobs: Sequence[Job]) -> Job:
 
     Employers post one requisition per city and aggregators republish the same requisition
     under a different URL form and a differently decorated title, so a group holds
-    complementary fields rather than noise. `source`, `platform`, `careers_url` and `notes`
-    come from the record whose apply URL is chosen, which keeps the row internally
-    consistent. The role is chosen independently of the URL because it is display text, and
+    complementary fields rather than noise. `source`, `platform` and `careers_url` come
+    from the record whose apply URL is chosen, which keeps the row internally consistent. The role is chosen independently of the URL because it is display text, and
     every member shares one `role_identity`, so the group's key is unaffected by the choice.
     """
     primary = min(jobs, key=_url_preference)

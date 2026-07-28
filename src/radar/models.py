@@ -21,7 +21,6 @@ SHEET_HEADERS = [
     "Application URL",
     "Careers URL",
     "Platform",
-    "Notes",
     "Status",
 ]
 
@@ -96,7 +95,6 @@ class Job:
     apply_url: str
     careers_url: str
     platform: Platform
-    notes: str = ""
     status: str = DEFAULT_STATUS
     season: Season | None = None
 
@@ -125,6 +123,5 @@ class Job:
             self.apply_url,
             self.careers_url,
             self.platform.value,
-            self.notes,
             self.status,
         ]

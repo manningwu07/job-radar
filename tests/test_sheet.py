@@ -14,6 +14,7 @@ SHEET_ID = "sheet-abc123"
 APPLY_URL_COLUMN_LETTER = "H"
 DEFAULT_COL_COUNT = len(SHEET_HEADERS)
 JOINED_LOCATION = join_locations(["Mountain View, CA", "Bellevue, WA", "Austin, TX", "Chicago, IL"])
+STALE_HEADER_ROW = SHEET_HEADERS[:-1] + ["Notes", "Status"]
 TRACKER_HEADER_ROW = [
     "Company",
     "Role",
@@ -101,6 +102,10 @@ class FakeWorksheet:
 
     def update(self, values, range_name=None, value_input_option=None):
         self.calls.append(("update", range_name, values, value_input_option))
+        start_row, start_column = gspread.utils.a1_to_rowcol(range_name)
+        for row_offset, row in enumerate(values):
+            for column_offset, value in enumerate(row):
+                self._write_cell(start_row + row_offset, start_column + column_offset, value)
 
     def append_rows(self, values, value_input_option=None, insert_data_option=None):
         self.calls.append(("append_rows", values, value_input_option, insert_data_option))
@@ -260,7 +265,40 @@ def test_open_raises_on_mismatched_headers(monkeypatch):
     message = str(excinfo.value)
     assert "Role Family" in message
     assert "Application URL" in message
-    assert "update" not in worksheet.call_names()
+    assert worksheet.call_names() == ["row_values"]
+
+
+def test_open_refuses_a_header_from_an_earlier_schema(monkeypatch):
+    worksheet = FakeWorksheet(values=[list(STALE_HEADER_ROW)])
+    patch_google(monkeypatch, worksheet)
+
+    with pytest.raises(sheet.SheetError) as excinfo:
+        sheet.JobSheet.open(SHEET_ID, SERVICE_ACCOUNT_JSON)
+
+    message = str(excinfo.value)
+    assert sheet.WORKSHEET_TITLE in message
+    assert f"Found {len(STALE_HEADER_ROW)} columns" in message
+    assert f"Expected {len(SHEET_HEADERS)} columns" in message
+    assert "'Notes'" in message
+    assert worksheet.call_names() == ["row_values"]
+
+
+def test_open_rebuilds_the_tab_after_it_is_deleted(monkeypatch):
+    spreadsheet = FakeSpreadsheet()
+    patch_google_spreadsheet(monkeypatch, spreadsheet)
+    first = sheet.JobSheet.open(SHEET_ID, SERVICE_ACCOUNT_JSON)
+    first.append([make_job()])
+
+    del spreadsheet.tabs[sheet.WORKSHEET_TITLE]
+    rebuilt = sheet.JobSheet.open(SHEET_ID, SERVICE_ACCOUNT_JSON)
+
+    assert [title for title, _, _ in spreadsheet.added_worksheets] == [
+        sheet.WORKSHEET_TITLE,
+        sheet.WORKSHEET_TITLE,
+    ]
+    fresh = spreadsheet.tabs[sheet.WORKSHEET_TITLE]
+    assert fresh.values == [list(SHEET_HEADERS)]
+    assert rebuilt.existing_keys() == {}
 
 
 def test_open_widens_narrow_sheet_before_writing_headers(monkeypatch):
@@ -465,7 +503,6 @@ def test_update_apply_urls_moves_url_without_disturbing_hand_edited_cells():
     neighbour = make_job(company="Anthropic", role="ML Systems Intern", apply_url="https://a/2")
     hand_edited = listed.to_row()
     hand_edited[SHEET_HEADERS.index("Status")] = "Applied 2026-07-20"
-    hand_edited[SHEET_HEADERS.index("Notes")] = "referral from Ada"
     worksheet = FakeWorksheet(values=[list(SHEET_HEADERS), hand_edited, neighbour.to_row()])
     job_sheet = sheet.JobSheet(worksheet)
     rows = job_sheet.existing_keys()
@@ -488,7 +525,10 @@ def test_update_apply_urls_moves_url_without_disturbing_hand_edited_cells():
     assert changed_cells == [(target_row, sheet.APPLY_URL_INDEX)]
     assert after[target_row][sheet.APPLY_URL_INDEX] == moved.apply_url
     assert after[target_row][SHEET_HEADERS.index("Status")] == "Applied 2026-07-20"
-    assert after[target_row][SHEET_HEADERS.index("Notes")] == "referral from Ada"
+    expected_row = list(before[target_row])
+    expected_row[sheet.APPLY_URL_INDEX] = moved.apply_url
+    assert after[target_row] == expected_row
+    assert len(after[target_row]) == len(SHEET_HEADERS)
 
 
 def test_update_apply_urls_empty_makes_no_api_calls():

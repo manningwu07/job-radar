@@ -236,8 +236,6 @@ def test_simplify_skips_inactive_and_joins_locations() -> None:
     assert google_job.platform is Platform.OTHER
     etched_job = next(job for job in jobs if job.company == "Etched")
     assert etched_job.platform is Platform.ASHBY
-    assert "Sponsorship: Other" in jobs[0].notes
-    assert "Season: Winter" in jobs[0].notes
     seasons_by_role = {job.role: job.season for job in jobs}
     assert seasons_by_role["Frontend Software Engineer Intern"] is Season.WINTER
     assert seasons_by_role["Software Engineering Intern"] is Season.SUMMER
