@@ -28,15 +28,20 @@ logger = logging.getLogger(__name__)
 
 
 class RoleCategory(Enum):
-    """Interest areas. Value is the user's interest priority, lower sorts first."""
+    """Interest areas. Value is the user's interest priority, lower sorts first.
 
-    SOFTWARE_ENGINEERING = 1
+    AI/automation leads because dual-titled postings (e.g. `Software Engineer Intern,
+    Autonomy`) must beat plain SWE in the digest, and company tier still dominates the
+    sort key so a tier-one SWE intern is not buried by a long-tail automation role.
+    """
+
+    AI_AUTOMATION = 1
     MACHINE_LEARNING = 2
-    BACKEND_INFRASTRUCTURE = 3
-    DISTRIBUTED_SYSTEMS = 4
+    SOFTWARE_ENGINEERING = 3
+    AI_INFRASTRUCTURE = 4
     PLATFORM_ENGINEERING = 5
-    AI_INFRASTRUCTURE = 6
-    ROBOTICS_SOFTWARE = 7
+    BACKEND_INFRASTRUCTURE = 6
+    DISTRIBUTED_SYSTEMS = 7
     RESEARCH_ENGINEERING = 8
     OTHER = 9
 
@@ -143,6 +148,28 @@ PLATFORM_ENGINEERING_KEYWORDS = frozenset(
         "cloud platform",
     }
 )
+AI_AUTOMATION_KEYWORDS = frozenset(
+    {
+        "ai automation",
+        "automation",
+        "robotics",
+        "robot software",
+        "autonomy",
+        "autonomous",
+        "motion planning",
+        "perception",
+        "slam",
+        "control systems",
+        "vehicle controls",
+        "motion control",
+        "simulation",
+        "embodied",
+        "self-driving",
+        "self driving",
+        "driverless",
+        "adas",
+    }
+)
 AI_INFRASTRUCTURE_KEYWORDS = frozenset(
     {
         "ai infrastructure",
@@ -154,17 +181,6 @@ AI_INFRASTRUCTURE_KEYWORDS = frozenset(
         "accelerator",
         "gpu",
         "cuda",
-    }
-)
-ROBOTICS_SOFTWARE_KEYWORDS = frozenset(
-    {
-        "robotics",
-        "robot software",
-        "autonomy",
-        "autonomous",
-        "motion planning",
-        "perception",
-        "slam",
     }
 )
 RESEARCH_ENGINEERING_KEYWORDS = frozenset(
@@ -491,13 +507,13 @@ _US_PLACE_PATTERN = _matcher(US_STATE_NAMES | US_COUNTRY_NAMES)
 _FOREIGN_PLACE_PATTERN = _matcher(FOREIGN_COUNTRY_NAMES | FOREIGN_CITY_NAMES)
 
 CATEGORY_PATTERNS: tuple[tuple[RoleCategory, re.Pattern[str]], ...] = (
-    (RoleCategory.SOFTWARE_ENGINEERING, _SOFTWARE_ENGINEERING_PATTERN),
+    (RoleCategory.AI_AUTOMATION, _matcher(AI_AUTOMATION_KEYWORDS)),
     (RoleCategory.MACHINE_LEARNING, _matcher(MACHINE_LEARNING_KEYWORDS)),
+    (RoleCategory.SOFTWARE_ENGINEERING, _SOFTWARE_ENGINEERING_PATTERN),
+    (RoleCategory.AI_INFRASTRUCTURE, _matcher(AI_INFRASTRUCTURE_KEYWORDS)),
+    (RoleCategory.PLATFORM_ENGINEERING, _matcher(PLATFORM_ENGINEERING_KEYWORDS)),
     (RoleCategory.BACKEND_INFRASTRUCTURE, _matcher(BACKEND_INFRASTRUCTURE_KEYWORDS)),
     (RoleCategory.DISTRIBUTED_SYSTEMS, _matcher(DISTRIBUTED_SYSTEMS_KEYWORDS)),
-    (RoleCategory.PLATFORM_ENGINEERING, _matcher(PLATFORM_ENGINEERING_KEYWORDS)),
-    (RoleCategory.AI_INFRASTRUCTURE, _matcher(AI_INFRASTRUCTURE_KEYWORDS)),
-    (RoleCategory.ROBOTICS_SOFTWARE, _matcher(ROBOTICS_SOFTWARE_KEYWORDS)),
     (RoleCategory.RESEARCH_ENGINEERING, _matcher(RESEARCH_ENGINEERING_KEYWORDS)),
 )
 
@@ -535,12 +551,17 @@ def target_summer_year(today: date) -> int:
 
 
 def categorize(role: str) -> RoleCategory:
-    """Return the highest-priority interest area the role title matches."""
+    """Return the highest-priority interest area the role title matches.
+
+    Every category pattern is checked, then the best (lowest) priority wins. That way a
+    title like `Software Engineer Intern, Autonomy` lands in AI_AUTOMATION instead of
+    plain SOFTWARE_ENGINEERING just because the SWE keywords also matched.
+    """
     normalized = normalize(role)
-    for category, pattern in CATEGORY_PATTERNS:
-        if pattern.search(normalized):
-            return category
-    return RoleCategory.OTHER
+    matches = [category for category, pattern in CATEGORY_PATTERNS if pattern.search(normalized)]
+    if not matches:
+        return RoleCategory.OTHER
+    return min(matches, key=lambda category: category.value)
 
 
 def _expand_year(digits: str) -> int:

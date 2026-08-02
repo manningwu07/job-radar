@@ -68,6 +68,9 @@ ACCEPTED_ROLES = [
     "GPU Inference Intern",
     "Robotics Software Intern",
     "Autonomy Software Co-op",
+    "AI Automation Intern",
+    "Self-Driving Software Intern",
+    "Perception Intern",
     "Research Engineering Intern",
     "Software Engineer Co-op (Undergraduate)",
     "Student Software Developer Apprentice",
@@ -437,13 +440,24 @@ def test_target_summer_year_rolls_over_in_june() -> None:
     assert target_summer_year(date(2027, 1, 15)) == 2027
 
 
-def test_categorize_prefers_software_engineering_then_machine_learning() -> None:
+def test_categorize_prefers_ai_automation_then_ml_then_swe() -> None:
+    assert categorize("Software Engineer Intern, Autonomy") is RoleCategory.AI_AUTOMATION
+    assert categorize("Robotics Software Intern") is RoleCategory.AI_AUTOMATION
+    assert categorize("AI Automation Intern") is RoleCategory.AI_AUTOMATION
     assert (
         categorize("Software Engineer Intern, Machine Learning")
-        is RoleCategory.SOFTWARE_ENGINEERING
+        is RoleCategory.MACHINE_LEARNING
     )
     assert categorize("Machine Learning Intern") is RoleCategory.MACHINE_LEARNING
+    assert categorize("Software Engineering Intern") is RoleCategory.SOFTWARE_ENGINEERING
+    assert categorize("AI Infrastructure Intern") is RoleCategory.AI_INFRASTRUCTURE
     assert categorize("Puppy Petting Intern") is RoleCategory.OTHER
+
+
+def test_sort_key_prefers_ai_automation_over_plain_swe_at_same_company() -> None:
+    autonomy = make_job("Software Engineer Intern, Autonomy", company="OpenAI")
+    plain_swe = make_job("Software Engineer Intern", company="OpenAI")
+    assert sort_key(autonomy) < sort_key(plain_swe)
 
 
 def test_accepts_undated_posting() -> None:
