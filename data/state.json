@@ -462,6 +462,13 @@
       "location": "New York City, NY; Houston, TX; Stamford, CT",
       "role": "Data Science Machine Learning Intern"
     },
+    "857ed65b8ae8958b": {
+      "apply_url": "https://joinbytedance.com/search/7670009669494704437",
+      "company": "ByteDance",
+      "first_seen": "2026-08-07",
+      "location": "San Jose, CA",
+      "role": "Applied Machine Learning Production Engineer Intern"
+    },
     "85e32e5ebb33fc76": {
       "apply_url": "https://www.janestreet.com/join-jane-street/position/8611307002/",
       "company": "Jane Street",
@@ -503,6 +510,13 @@
       "first_seen": "2026-08-04",
       "location": "San Jose, CA; Seattle, WA",
       "role": "Backend Software Engineer Intern, Global E-Commerce"
+    },
+    "964769cef77ec5e5": {
+      "apply_url": "https://careers.roblox.com/jobs/8072713?gh_jid=8072713&gh_src=nnh32o631us",
+      "company": "Roblox",
+      "first_seen": "2026-08-07",
+      "location": "San Mateo, CA",
+      "role": "Software Engineer Intern"
     },
     "967a325966c4dc37": {
       "apply_url": "https://jobs.ashbyhq.com/melius/b61f063a-4f94-4e50-a4ef-05aaab552280",
@@ -728,6 +742,13 @@
       "location": "Multiple Locations, United States",
       "role": "Software Engineer Intern, Fullstack Product (Web + Services)"
     },
+    "ea9d9bac07975171": {
+      "apply_url": "https://joinbytedance.com/search/7668464504736876853",
+      "company": "ByteDance",
+      "first_seen": "2026-08-07",
+      "location": "San Jose, CA",
+      "role": "GPU/AI Application System Software Engineer Intern"
+    },
     "ec3ef8de55176c1e": {
       "apply_url": "https://www.citadel.com/careers/details/software-engineer-intern-us/",
       "company": "Citadel",
@@ -783,6 +804,13 @@
       "first_seen": "2026-07-28",
       "location": "Chicago, IL",
       "role": "Software Engineer Intern"
+    },
+    "ff43972411c081c2": {
+      "apply_url": "https://joinbytedance.com/search/7670690923748870405",
+      "company": "ByteDance",
+      "first_seen": "2026-08-07",
+      "location": "San Jose, CA",
+      "role": "AI Network Automation Engineer Intern, Global Physical Network Infra"
     }
   },
   "version": 1
