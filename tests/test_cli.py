@@ -155,6 +155,43 @@ def test_publish_appends_everything_when_state_and_sheet_agree(
 
 
 @pytest.mark.usefixtures("sheet_env")
+def test_publish_emails_only_when_the_run_has_something_to_report(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Four runs a day must not mean four emails a day."""
+    sent: list[str] = []
+    monkeypatch.setattr(cli, "_send_email_best_effort", sent.append)
+    already_known = make_job()
+    sheet = FakeSheet(present=[already_known])
+    monkeypatch.setattr(cli, "JobSheet", sheet)
+
+    store = Store()
+    store.record([already_known])
+    exit_code = _publish(
+        store.diff([already_known]), [already_known], store, tmp_path / "state.json"
+    )
+
+    assert exit_code == ExitCode.OK
+    assert sheet.appended == []
+    assert sent == []
+
+
+@pytest.mark.usefixtures("sheet_env")
+def test_publish_emails_when_a_new_posting_is_appended(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sent: list[str] = []
+    monkeypatch.setattr(cli, "_send_email_best_effort", sent.append)
+    monkeypatch.setattr(cli, "JobSheet", FakeSheet())
+
+    store = Store()
+    ranked = [make_job()]
+    _publish(store.diff(ranked), ranked, store, tmp_path / "state.json")
+
+    assert len(sent) == 1
+
+
+@pytest.mark.usefixtures("sheet_env")
 def test_publish_refreshes_the_apply_url_of_a_drifted_row(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

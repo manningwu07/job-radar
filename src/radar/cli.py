@@ -128,7 +128,13 @@ def _publish(
     digest = render_digest(plan.to_append, updated)
     write_step_summary(digest)
     print(digest)
-    _send_email_best_effort(digest)
+    # Four runs a day means four digests a day, and most of them find nothing. Only a
+    # run with something to report earns an email; the step summary still records every
+    # run, so a quiet run is visible in Actions without landing in the inbox.
+    if plan.to_append or updated:
+        _send_email_best_effort(digest)
+    else:
+        logger.info("No new postings and no changed URLs, skipping the email")
     store.record(ranked_jobs)
     store.save(state_path)
     return ExitCode.OK

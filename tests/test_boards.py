@@ -12,7 +12,7 @@ from radar.boards import (
 from radar.models import Platform
 
 MINIMUM_VERIFIED_BOARDS = 30
-EXPECTED_TARGET_BOARD_COUNT = 18
+EXPECTED_TARGET_BOARD_COUNT = 19
 SUFFIX_CASES = (
     ("Palantir Technologies", "Palantir"),
     ("Google LLC", "Google"),
@@ -53,6 +53,7 @@ def test_registry_covers_every_supported_platform() -> None:
         Platform.ASHBY,
         Platform.SMARTRECRUITERS,
         Platform.WORKDAY,
+        Platform.AMD,
     }
 
     assert {board.platform for board in BOARDS} == supported_platforms

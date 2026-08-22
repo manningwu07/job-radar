@@ -35,6 +35,7 @@ class Platform(Enum):
     ASHBY = "Ashby"
     SMARTRECRUITERS = "SmartRecruiters"
     WORKDAY = "Workday"
+    AMD = "AMD"
     OTHER = "Other"
 
 
@@ -51,6 +52,7 @@ class Source(Enum):
     ASHBY = "ashby"
     SMARTRECRUITERS = "smartrecruiters"
     WORKDAY = "workday"
+    AMD = "amd"
     SIMPLIFY = "simplify"
 
 

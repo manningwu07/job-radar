@@ -1,6 +1,6 @@
 # job-radar
 
-job-radar checks 37 company job boards plus one community aggregator feed every morning and looks for Summer 2027 software engineering internships. Anything that matches your profile and that it has not seen before gets appended as a new row in a Google Sheet, and you get an email digest of the top five finds. It runs itself on a GitHub Actions cron, so after the one-time setup below there is nothing to babysit.
+job-radar checks 38 company job boards plus one community aggregator feed three times a day and looks for Summer 2027 software engineering internships. Anything that matches your profile and that it has not seen before gets appended as a new row in a Google Sheet, and you get an email digest of the top five finds. It runs itself on a GitHub Actions cron, so after the one-time setup below there is nothing to babysit.
 
 ## Architecture
 
@@ -50,7 +50,13 @@ The numbers are much larger going in than coming out. A live run in late July 20
 
 More importantly, **most of your target companies will report zero right now, and that is correct.** Summer 2027 recruiting has not opened yet as of July 2026. OpenAI, Anthropic and most of the tier one list have no 2027 internship requisitions posted at all, so their boards return nothing that survives the filter. If you see nothing from OpenAI, the tool is working and OpenAI simply has not posted yet.
 
-This is precisely why the job runs daily instead of on demand. Boards open on no announced schedule, often quietly, and the postings that matter most fill quickly. The cron exists to catch each board the morning it opens rather than whenever you happen to remember to look.
+This is precisely why the job runs on a cron instead of on demand. Boards open on no announced schedule, often quietly, and the postings that matter most fill quickly. The cron exists to catch each board the day it opens rather than whenever you happen to remember to look.
+
+It runs three times a day rather than once because a single morning look is a poor sampling rate for something time-sensitive. A once-a-day 15:00 UTC run sampled just *before* the US business day, so a posting that went live at 9 AM Pacific waited 23 hours for the next scan.
+
+The three runs are placed on the hours postings actually land instead of spread evenly around the clock. Across AMD's 630 US requisitions, 95% were posted between 06:00 and 17:00 Pacific, peaking at 08:00, while the entire 00:00-05:00 window held 1.6% between it. So the schedule is 09:00, 13:00 and 17:00 Pacific: fewer runs than an even six-hour spacing, and a shorter wait during the hours that matter, at most four hours from posting to digest through the working day. The long overnight gap is nearly empty, and anything posted in it is caught by the 09:00 run the same morning.
+
+Only a run that actually finds something sends an email, so the extra runs do not mean extra mail.
 
 ### Where postings come from
 
@@ -61,12 +67,17 @@ This is precisely why the job runs daily instead of on demand. Boards open on no
 | Lever | 4 | Zoox, Palantir, Shield AI, Spotify |
 | Workday | 2 | NVIDIA, Salesforce |
 | SmartRecruiters | 1 | Wise |
+| AMD | 1 | AMD |
 
-Those 37 boards are split into three tiers: 18 tier one companies from your priority list, 12 tier two, and 7 tier three. The tier feeds ranking, so a tier one company sorts above an equally good posting elsewhere.
+Those 38 boards are split into three tiers: 19 tier one companies from your priority list, 12 tier two, and 7 tier three. The tier feeds ranking, so a tier one company sorts above an equally good posting elsewhere.
 
 **Google, Tesla, Apple and Amazon are on the priority list but have no board entry**, because none of them exposes a usable public JSON job board. Google and Apple run bespoke career sites, and Amazon and Tesla use endpoints that are not stable enough to depend on. They are covered through the aggregator feed instead, which is a community-maintained Summer 2027 internship listing that already scrapes them. Postings for those four companies therefore arrive with `Source` set to `simplify`, and they do get ranked with their full priority because company names are canonicalized before ranking.
 
-The two Workday boards are queried with a search term of `intern` and are read five pages deep, so a very large Workday board can be truncated. This has not been a problem in practice for NVIDIA or Salesforce.
+The two Workday boards are queried with a search term of `intern` and are paged to exhaustion, bounded by the `total` the API reports. NVIDIA returns about 960 matches and Salesforce about 770, so each takes roughly 40 to 50 requests at the API's maximum page size of 20; pages are fetched one at a time with a short delay, which keeps a full scan around a minute and well clear of any rate limit. This replaced a five-page ceiling that read only the first 100 results of each board, ordered by Workday's relevance sort rather than by date, which meant a large board could silently drop postings off the end.
+
+**AMD has its own fetcher** rather than arriving through the aggregator. AMD's career site exposes a public JSON API with true posting timestamps, and it is queried on the board's own early-career category, which returns about 40 postings instead of the ~1200 on the whole board. Because that category label is AMD's to rename, a query that matches nothing falls back to paging the unfiltered board newest-first, stopping once postings are more than 30 days old.
+
+Sourcing AMD directly matters for speed, not just tidiness. When AMD opened its 2027 internships at 23:28 UTC on 20 August 2026, the aggregator did not pick them up until 15:41 UTC the next day, which was 41 minutes after that morning's scan had already run, so the digest did not go out until the morning of 22 August: roughly 40 hours, of which about 16 were the aggregator's lag and the rest were the once-a-day schedule. Reading the board directly removes the first delay and the six-hour cadence caps the second.
 
 ## Google Sheets setup
 
@@ -255,8 +266,14 @@ Usually correct: everything currently posted is already in your sheet, and dedup
 **Duplicate rows appeared for a job you already had.**
 Something changed the identity of the row. Check whether the `Company` or `Role` cell was hand-edited, since those two columns are what the pipeline uses to find an existing row. Delete the duplicate and restore the original text in those cells.
 
-**The daily run happens an hour early in the winter.**
-Expected. GitHub schedules cron in UTC and does not observe daylight saving time, so the fixed `15:00` UTC schedule is 8:00 AM Pacific in summer and 7:00 AM Pacific in winter. If the winter hour bothers you, edit the cron line in `.github/workflows/daily.yml` to `0 16 * * *` for those months.
+**The runs happen an hour early in the winter.**
+Expected. GitHub schedules cron in UTC and does not observe daylight saving time, so the fixed `4 16,20,0 * * *` schedule lands at 08:00, 12:00 and 16:00 Pacific from November to March instead of 09:00, 13:00 and 17:00. Both sets sit inside the active posting window, so no change is needed.
+
+**A run starts late, sometimes by an hour or more.**
+Expected, and partly mitigated. Scheduled Actions runs are queued rather than guaranteed, and the top of the hour is the most contended slot; this workflow was previously observed starting anywhere from 16 minutes to two hours after its `0 15` schedule. The cron is now offset to `:04` to sit outside that spike. Runs can still be delayed or dropped under heavy load, which is another reason three looks a day beats one.
+
+**A quiet run sends no email.**
+Expected. A run that appends no new rows and refreshes no URLs writes its digest to the Actions step summary and skips the email, so four runs a day do not fill your inbox with "no new jobs".
 
 ---
 

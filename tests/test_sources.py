@@ -2,15 +2,17 @@
 
 import json
 import logging
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
 import requests
 
+from radar import sources
 from radar.boards import Board
 from radar.models import Platform, Season, Source
 from radar.sources import (
+    WORKDAY_PAGE_SIZE,
     fetch_all,
     fetch_board,
     fetch_simplify,
@@ -21,6 +23,7 @@ FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures"
 FOUND_AT = date(2026, 7, 27)
 CAREERS_URL = "https://example.com/careers"
 NVIDIA_TOKEN = "nvidia.wd5.myworkdayjobs.com|nvidia|NVIDIAExternalCareerSite"
+AMD_HOST = "careers.amd.com"
 PLATFORM_URL_CASES = (
     (
         "https://boards.greenhouse.io/example/jobs/123",
@@ -95,6 +98,45 @@ class FakeSession:
     def post(self, url: str, **request_options: object) -> FakeResponse:
         """Return the next queued POST response."""
         return FakeResponse(self.post_payloads.pop(0))
+
+
+class RecordingSession:
+    """Return queued responses and keep the request options each call was made with."""
+
+    def __init__(
+        self,
+        get_payloads: list[object] | None = None,
+        post_payloads: list[object] | None = None,
+    ) -> None:
+        self.get_payloads = list(get_payloads or [])
+        self.post_payloads = list(post_payloads or [])
+        self.get_calls: list[dict[str, object]] = []
+        self.post_calls: list[dict[str, object]] = []
+
+    def get(self, url: str, **request_options: object) -> FakeResponse:
+        """Record a GET and return the next queued response."""
+        self.get_calls.append(request_options)
+        return FakeResponse(self.get_payloads.pop(0))
+
+    def post(self, url: str, **request_options: object) -> FakeResponse:
+        """Record a POST and return the next queued response."""
+        self.post_calls.append(request_options)
+        return FakeResponse(self.post_payloads.pop(0))
+
+
+def _workday_page(count: int, total: int) -> dict[str, object]:
+    return {
+        "total": total,
+        "jobPostings": [
+            {
+                "title": f"Software Engineer Intern {index}",
+                "externalPath": f"/job/Santa-Clara/Intern_JR{index}",
+                "locationsText": "Santa Clara, CA",
+                "postedOn": "Posted Today",
+            }
+            for index in range(count)
+        ],
+    }
 
 
 class RoutingSession:
@@ -215,6 +257,131 @@ def test_workday_normalizes_relative_dates() -> None:
     assert jobs[0].posted_at == date(2026, 7, 24)
     assert jobs[1].posted_at == date(2026, 7, 23)
     assert jobs[0].apply_url.startswith("https://nvidia.wd5.myworkdayjobs.com/en-US/")
+
+
+@pytest.fixture(autouse=True)
+def _no_paging_delay(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Drop the polite delay between pages so paging tests stay fast."""
+    monkeypatch.setattr(sources.time, "sleep", lambda _seconds: None)
+
+
+def test_workday_pages_past_the_old_five_page_ceiling() -> None:
+    """A board with more than 100 matches is read whole, not truncated at 100."""
+    session = RecordingSession(
+        post_payloads=[_workday_page(WORKDAY_PAGE_SIZE, 150) for _ in range(7)]
+        + [_workday_page(10, 150)]
+    )
+
+    jobs = fetch_board(_board("NVIDIA", Platform.WORKDAY, NVIDIA_TOKEN), session, FOUND_AT)
+
+    assert len(jobs) == 150
+    assert len(session.post_calls) == 8
+    offsets = [call["json"]["offset"] for call in session.post_calls]
+    assert offsets == [0, 20, 40, 60, 80, 100, 120, 140]
+
+
+def test_workday_stops_at_the_reported_total_rather_than_an_empty_page() -> None:
+    """An offset past the end serves rows again, so the total is what ends the walk."""
+    session = RecordingSession(
+        post_payloads=[_workday_page(WORKDAY_PAGE_SIZE, 40) for _ in range(4)]
+    )
+
+    jobs = fetch_board(_board("NVIDIA", Platform.WORKDAY, NVIDIA_TOKEN), session, FOUND_AT)
+
+    assert len(jobs) == 40
+    assert len(session.post_calls) == 2
+
+
+def test_workday_stops_on_a_short_page_when_no_total_is_reported() -> None:
+    page = _workday_page(3, 0)
+    del page["total"]
+    session = RecordingSession(post_payloads=[page])
+
+    jobs = fetch_board(_board("NVIDIA", Platform.WORKDAY, NVIDIA_TOKEN), session, FOUND_AT)
+
+    assert len(jobs) == 3
+    assert len(session.post_calls) == 1
+
+
+def test_amd_reads_the_intern_category_from_its_own_board() -> None:
+    session = RecordingSession(get_payloads=[_fixture("amd.json")])
+
+    jobs = fetch_board(_board("AMD", Platform.AMD, AMD_HOST), session, FOUND_AT)
+
+    assert len(jobs) == 3
+    assert session.get_calls[0]["params"]["categories"] == sources.AMD_INTERN_CATEGORY
+    assert jobs[0].company == "AMD"
+    assert jobs[0].source is Source.AMD
+    assert jobs[0].platform is Platform.AMD
+    assert jobs[0].posted_at == date(2026, 8, 20)
+    assert jobs[0].location == "Santa Clara, California; San Jose, California"
+    assert jobs[0].apply_url == "https://careers.amd.com/careers-home/jobs/91176"
+    assert jobs[1].location == (
+        "Austin, Texas; Boxborough, Massachusetts; Fort Collins, Colorado; +3 more"
+    )
+
+
+def test_amd_pages_the_whole_board_when_the_category_matches_nothing() -> None:
+    """AMD owns the category label, so an empty result must not silently mean no jobs."""
+    session = RecordingSession(
+        get_payloads=[
+            {"data": {"jobs": [], "totalCount": 0}},
+            _fixture("amd.json"),
+        ]
+    )
+
+    jobs = fetch_board(_board("AMD", Platform.AMD, AMD_HOST), session, FOUND_AT)
+
+    assert len(jobs) == 3
+    assert "categories" in session.get_calls[0]["params"]
+    assert "categories" not in session.get_calls[1]["params"]
+
+
+def test_amd_fallback_stops_once_results_predate_the_lookback() -> None:
+    """The board answers newest first, so the walk ends at the first stale posting."""
+    stale = FOUND_AT - timedelta(days=sources.AMD_LOOKBACK_DAYS + 1)
+    fresh_page = {
+        "data": {
+            "jobs": [
+                {
+                    "data": {
+                        "slug": str(index),
+                        "title": "Software Engineer Intern",
+                        "posted_date": FOUND_AT.isoformat(),
+                        "full_location": "Santa Clara, California",
+                    }
+                }
+                for index in range(sources.AMD_PAGE_SIZE - 1)
+            ]
+            + [
+                {
+                    "data": {
+                        "slug": "stale",
+                        "title": "Software Engineer Intern",
+                        "posted_date": stale.isoformat(),
+                        "full_location": "Santa Clara, California",
+                    }
+                }
+            ]
+        }
+    }
+    session = RecordingSession(
+        get_payloads=[{"data": {"jobs": []}}, fresh_page, fresh_page]
+    )
+
+    jobs = fetch_board(_board("AMD", Platform.AMD, AMD_HOST), session, FOUND_AT)
+
+    assert len(jobs) == sources.AMD_PAGE_SIZE - 1
+    assert len(session.get_calls) == 2
+
+
+def test_amd_accepts_a_response_without_the_data_envelope() -> None:
+    payload = _fixture("amd.json")["data"]
+    session = RecordingSession(get_payloads=[payload])
+
+    jobs = fetch_board(_board("AMD", Platform.AMD, AMD_HOST), session, FOUND_AT)
+
+    assert len(jobs) == 3
 
 
 def test_simplify_skips_inactive_and_joins_locations() -> None:

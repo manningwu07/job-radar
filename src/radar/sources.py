@@ -2,6 +2,7 @@
 
 import logging
 import re
+import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -24,8 +25,13 @@ HTTP_RETRY_METHODS = frozenset(("GET", "POST"))
 USER_AGENT = "job-radar/1.0 (+personal internship search)"
 SMARTRECRUITERS_PAGE_SIZE = 100
 SMARTRECRUITERS_PAGE_LIMIT = 5
+# The cxs API rejects any limit above 20 with HTTP 400, so the page size is fixed and
+# depth comes from paging instead. The page cap only guards against a board that never
+# reports a total and never returns a short page; NVIDIA's ~1000 intern matches take 49
+# pages, so the cap is set well above any real board.
 WORKDAY_PAGE_SIZE = 20
-WORKDAY_PAGE_LIMIT = 5
+WORKDAY_MAX_PAGES = 100
+WORKDAY_PAGE_DELAY_SECONDS = 0.25
 WORKDAY_TOKEN_PARTS = 3
 MILLISECONDS_PER_SECOND = 1_000
 DEFAULT_LOCATION = "Unspecified"
@@ -40,6 +46,16 @@ ASHBY_URL = (
     "https://api.ashbyhq.com/posting-api/job-board/{token}?includeCompensation=false"
 )
 SMARTRECRUITERS_URL = "https://api.smartrecruiters.com/v1/companies/{token}/postings"
+AMD_URL = "https://{host}/api/jobs"
+AMD_JOB_URL = "https://{host}/careers-home/jobs/{slug}"
+# The board's own category for early-career reqs. Filtering on it returns ~40 postings
+# instead of the ~1200 on the whole board, but the label is AMD's to rename, so a run
+# that matches nothing falls back to paging the unfiltered board.
+AMD_INTERN_CATEGORY = " Student / Intern / Temp"
+AMD_PAGE_SIZE = 100
+AMD_MAX_PAGES = 12
+AMD_LOOKBACK_DAYS = 30
+AMD_PAGE_DELAY_SECONDS = 0.25
 SMARTRECRUITERS_JOB_URL = "https://jobs.smartrecruiters.com/{token}/{job_id}"
 WORKDAY_URL = "https://{host}/wday/cxs/{tenant}/{site}/jobs"
 WORKDAY_JOB_URL = "https://{host}/en-US/{site}{external_path}"
@@ -51,6 +67,7 @@ PLATFORM_BY_HOST: dict[str, Platform] = {
     "jobs.lever.co": Platform.LEVER,
     "jobs.ashbyhq.com": Platform.ASHBY,
     "jobs.smartrecruiters.com": Platform.SMARTRECRUITERS,
+    "careers.amd.com": Platform.AMD,
 }
 REMOTE_PATTERN = re.compile(r"\b(remote|work from home|distributed)\b", re.IGNORECASE)
 LOCATION_SEPARATOR_PATTERN = re.compile(r"\s*(?:;|\||\n)\s*")
@@ -167,10 +184,11 @@ class WorkdayPosting(TypedDict, total=False):
     postedOn: str
 
 
-class WorkdayResponse(TypedDict):
+class WorkdayResponse(TypedDict, total=False):
     """Represent a Workday search response."""
 
     jobPostings: list[WorkdayPosting]
+    total: int
 
 
 class WorkdayRequest(TypedDict):
@@ -180,6 +198,37 @@ class WorkdayRequest(TypedDict):
     limit: int
     offset: int
     searchText: str
+
+
+class AmdPosting(TypedDict, total=False):
+    """Represent fields consumed from an AMD posting."""
+
+    slug: str
+    title: str
+    posted_date: str
+    full_location: str
+    short_location: str
+
+
+class AmdRecord(TypedDict):
+    """Represent one AMD result, which wraps its posting in a `data` envelope."""
+
+    data: AmdPosting
+
+
+class AmdPayload(TypedDict, total=False):
+    """Represent the body of an AMD jobs response."""
+
+    jobs: list[AmdRecord]
+    totalCount: int
+
+
+class AmdResponse(TypedDict, total=False):
+    """Represent an AMD jobs response, which may nest the body under `data`."""
+
+    data: AmdPayload
+    jobs: list[AmdRecord]
+    totalCount: int
 
 
 class SimplifyPosting(TypedDict, total=False):
@@ -475,9 +524,24 @@ def _workday_job(
 def _fetch_workday(
     board: Board, session: requests.Session, found_at: date
 ) -> list[Job]:
+    """Page a Workday board until its result set is exhausted.
+
+    Three stop conditions, because none of them is reliable alone. The reported `total`
+    is the real bound and is checked first: an offset past the end does not return an
+    empty page, it returns rows again, so paging until a page comes back empty would
+    loop forever. A short page still ends the walk for a board that reports no total,
+    and the page cap is the backstop for a board that does neither.
+
+    Pages are requested one at a time with a small delay. A large board is ~50 requests
+    and the session already retries 429 with backoff, so this stays well clear of any
+    rate limit while adding only seconds to a run.
+    """
     host, tenant, site = _parse_workday_token(board.token)
     jobs: list[Job] = []
-    for page in range(WORKDAY_PAGE_LIMIT):
+    total: int | None = None
+    for page in range(WORKDAY_MAX_PAGES):
+        if page:
+            time.sleep(WORKDAY_PAGE_DELAY_SECONDS)
         request_payload = WorkdayRequest(
             appliedFacets={},
             limit=WORKDAY_PAGE_SIZE,
@@ -492,12 +556,100 @@ def _fetch_workday(
         response.raise_for_status()
         payload = cast(WorkdayResponse, response.json())
         postings = payload["jobPostings"]
+        if total is None:
+            total = payload.get("total")
         jobs.extend(
             _workday_job(board, posting, found_at, host, site) for posting in postings
         )
         if len(postings) < WORKDAY_PAGE_SIZE:
             break
+        if total is not None and len(jobs) >= total:
+            break
+    else:
+        logger.warning(
+            "Stopped paging the %s Workday board at the %d page cap",
+            board.company,
+            WORKDAY_MAX_PAGES,
+        )
     return jobs
+
+
+def _amd_payload(response: requests.Response) -> AmdPayload:
+    """Return the body of an AMD response, which is sometimes nested under `data`."""
+    payload = cast(AmdResponse, response.json())
+    nested = payload.get("data")
+    if nested is not None:
+        return nested
+    return cast(AmdPayload, payload)
+
+
+def _amd_job(board: Board, posting: AmdPosting, found_at: date) -> Job:
+    location = posting.get("full_location") or posting.get(
+        "short_location", DEFAULT_LOCATION
+    )
+    fields = _JobFields(
+        company=board.company,
+        role=posting["title"],
+        posted_at=_parse_iso_date(posting.get("posted_date")),
+        found_at=found_at,
+        source=Source.AMD,
+        apply_url=AMD_JOB_URL.format(host=board.token, slug=posting["slug"]),
+        careers_url=board.careers_url,
+        platform=board.platform,
+        description="",
+    )
+    return _build_job(fields, _locations_from_text(location))
+
+
+def _amd_postings(
+    board: Board,
+    session: requests.Session,
+    category: str | None,
+    cutoff: date | None,
+) -> list[AmdPosting]:
+    """Page AMD results newest first, stopping once they predate `cutoff`.
+
+    The board answers in descending `posted_date` order, so a cutoff lets the unfiltered
+    walk stop after a few pages instead of pulling all ~1200 reqs. The category query
+    needs no cutoff: it is small enough to read whole.
+    """
+    postings: list[AmdPosting] = []
+    for page in range(AMD_MAX_PAGES):
+        if page:
+            time.sleep(AMD_PAGE_DELAY_SECONDS)
+        params: dict[str, str | int] = {"limit": AMD_PAGE_SIZE, "page": page + 1}
+        if category is not None:
+            params["categories"] = category
+        response = session.get(
+            AMD_URL.format(host=board.token),
+            params=params,
+            timeout=HTTP_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        records = _amd_payload(response).get("jobs", [])
+        for record in records:
+            posting = record["data"]
+            posted_at = _parse_iso_date(posting.get("posted_date"))
+            if cutoff is not None and posted_at is not None and posted_at < cutoff:
+                return postings
+            postings.append(posting)
+        if len(records) < AMD_PAGE_SIZE:
+            break
+    return postings
+
+
+def _fetch_amd(board: Board, session: requests.Session, found_at: date) -> list[Job]:
+    """Fetch AMD's early-career reqs from its own board rather than an aggregator."""
+    postings = _amd_postings(board, session, AMD_INTERN_CATEGORY, cutoff=None)
+    if not postings:
+        logger.warning(
+            "AMD returned nothing for the %r category, paging the whole board instead",
+            AMD_INTERN_CATEGORY,
+        )
+        postings = _amd_postings(
+            board, session, None, cutoff=found_at - timedelta(days=AMD_LOOKBACK_DAYS)
+        )
+    return [_amd_job(board, posting, found_at) for posting in postings]
 
 
 BoardFetcher = Callable[[Board, requests.Session, date], list[Job]]
@@ -507,6 +659,7 @@ BOARD_FETCHERS: dict[Platform, BoardFetcher] = {
     Platform.ASHBY: _fetch_ashby,
     Platform.SMARTRECRUITERS: _fetch_smartrecruiters,
     Platform.WORKDAY: _fetch_workday,
+    Platform.AMD: _fetch_amd,
 }
 
 

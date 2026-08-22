@@ -1,12 +1,26 @@
-name: daily
+name: scan
 
 on:
   schedule:
-    # 15:00 UTC is 8:00 AM PDT (UTC-7) and 7:00 AM PST (UTC-8).
-    # GitHub evaluates cron in UTC only and never observes daylight saving time,
-    # so this fires an hour earlier in local terms from November to March.
-    # Change this to "0 16 * * *" if you want 8:00 AM local through the winter.
-    - cron: "0 15 * * *"
+    # Three looks a day, placed on the hours postings actually land rather than spread
+    # evenly around the clock. Measured over AMD's 630 US requisitions, 95% were posted
+    # between 06:00 and 17:00 Pacific and peaked at 08:00; the whole 00:00-05:00 window
+    # held 1.6% between it. Scanning the dead hours costs runs and finds nothing, so
+    # these three sit at 09:00, 13:00 and 17:00 Pacific.
+    #
+    # That is fewer runs than an every-six-hours schedule and a shorter wait during the
+    # hours that matter: at most four hours from posting to digest through the working
+    # day, against six. The overnight gap is long but nearly empty, and anything posted
+    # in it is picked up by the 09:00 run the same morning.
+    #
+    # The :04 offset matters as much as the hours. Scheduled runs are queued, and the
+    # top of the hour is the most contended slot on Actions, where this workflow has
+    # been observed starting anywhere from 16 minutes to two hours late.
+    #
+    # GitHub evaluates cron in UTC only and never observes daylight saving time, so
+    # these land an hour earlier in local terms from November to March: 08:00, 12:00
+    # and 16:00 Pacific, which is still inside the active window.
+    - cron: "4 16,20,0 * * *"
   workflow_dispatch:
 
 # Only contents:write is granted, so the state commit can be pushed. Naming any
@@ -56,5 +70,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/state.json
-          git commit -m "chore(state): jobs seen on $(date -u +%Y-%m-%d)"
+          git commit -m "chore(state): jobs seen at $(date -u +%Y-%m-%dT%H:%MZ)"
           git push
