@@ -77,7 +77,7 @@ A listing must:
 - match software engineering, machine learning, infrastructure, distributed systems, platform, robotics software, or research engineering;
 - target undergraduate candidates or leave degree level unstated;
 - include a US location, remote eligibility, or an unqualified location;
-- target the current Summer recruiting cycle or leave the term unstated;
+- target the current Summer recruiting cycle, a Spring 2027 co-op, or leave the term unstated;
 - be no more than 180 days old when a posting date exists.
 
 Product management, analytics, IT support, QA, quantitative research, senior roles, graduate-only roles, and narrow frontend, mobile, or security roles are excluded.

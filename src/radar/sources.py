@@ -20,7 +20,6 @@ HTTP_RETRY_STATUS_CODES = (429, 500, 502, 503, 504)
 HTTP_RETRY_METHODS = frozenset(("GET",))
 USER_AGENT = "job-radar/1.0 (+personal internship search)"
 DEFAULT_LOCATION = "Unspecified"
-POOL_ROLE_TERM = "intern"
 POOL_URL = (
     "https://raw.githubusercontent.com/vanshb03/"
     "Summer2027-Internships/dev/.github/scripts/listings.json"
@@ -196,7 +195,6 @@ def fetch_pool(session: requests.Session, found_at: date) -> list[Job]:
         for posting in postings
         if posting.get("active")
         and posting.get("is_visible")
-        and POOL_ROLE_TERM in posting["title"].casefold()
     ]
     if not jobs:
         raise ValueError("Pooled internship feed contains no active internship listings")

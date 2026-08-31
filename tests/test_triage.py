@@ -349,6 +349,17 @@ def test_rejects_spring_of_target_year() -> None:
     assert not is_relevant(make_job(f"Software Engineering Intern, Spring {TARGET_YEAR}"))
 
 
+@pytest.mark.parametrize("role_term", ["Co-op", "Coop"])
+def test_accepts_spring_coop_of_target_year(role_term: str) -> None:
+    role: str = f"Software Engineering {role_term}, Spring {TARGET_YEAR}"
+    assert is_relevant(make_job(role, season=Season.SPRING))
+
+
+def test_rejects_fall_coop_of_target_year() -> None:
+    role: str = f"Software Engineering Co-op, Fall {TARGET_YEAR}"
+    assert not is_relevant(make_job(role, season=Season.FALL))
+
+
 @pytest.mark.parametrize("separator", [" ", ", ", "-", "_", " '"])
 def test_reads_a_dated_term_through_any_separator(separator: str) -> None:
     short_year = str(PAST_YEAR)[-2:] if separator == " '" else str(PAST_YEAR)
@@ -398,7 +409,7 @@ def test_accepts_academic_year_range_ending_at_the_target_year() -> None:
 
 
 @pytest.mark.parametrize("season", [Season.SPRING, Season.FALL, Season.WINTER])
-def test_rejects_non_summer_season_field(season: Season) -> None:
+def test_rejects_non_summer_season_field_for_an_internship(season: Season) -> None:
     fall_req = make_job(
         "Software Engineer Intern, Service Engineering",
         company="Tesla",

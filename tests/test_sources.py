@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import requests
 
-from radar.models import Platform, Season, Source
+from radar.models import Job, Platform, Season, Source
 from radar.sources import (
     SourceError,
     canonical_company,
@@ -119,10 +119,32 @@ def test_pool_parses_season_from_terms() -> None:
     etched_posting.pop("season")
     etched_posting["terms"] = ["Spring 2027"]
 
-    jobs = fetch_pool(FakeSession(payload), FOUND_AT)
+    jobs: list[Job] = fetch_pool(FakeSession(payload), FOUND_AT)
     etched_job = next(job for job in jobs if job.company == "Etched")
 
     assert etched_job.season is Season.SPRING
+
+
+def test_pool_keeps_coop_titles_without_the_word_intern() -> None:
+    payload: object = _fixture("simplify.json")
+    assert isinstance(payload, list)
+    payload.append(
+        {
+            "active": True,
+            "company_name": "Example",
+            "company_url": "https://example.com/careers",
+            "date_posted": 1784878468,
+            "is_visible": True,
+            "locations": ["New York, NY"],
+            "season": "Spring",
+            "title": "Software Engineering Co-op",
+            "url": "https://example.com/jobs/software-engineering-coop",
+        }
+    )
+
+    jobs: list[Job] = fetch_pool(FakeSession(payload), FOUND_AT)
+
+    assert any(job.role == "Software Engineering Co-op" for job in jobs)
 
 
 def test_fetch_all_fails_loudly_when_the_pool_is_unavailable() -> None:

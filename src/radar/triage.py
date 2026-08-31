@@ -30,8 +30,7 @@ class RoleCategory(Enum):
     """Interest areas. Value is the user's interest priority, lower sorts first.
 
     AI/automation leads because dual-titled postings (e.g. `Software Engineer Intern,
-    Autonomy`) must beat plain SWE in the digest, and company tier still dominates the
-    sort key so a tier-one SWE intern is not buried by a long-tail automation role.
+    Autonomy`) must beat plain SWE in the digest.
     """
 
     AI_AUTOMATION = 1
@@ -488,6 +487,7 @@ def _matcher(keywords: frozenset[str]) -> re.Pattern[str]:
 
 
 _INTERNSHIP_PATTERN = _matcher(INTERNSHIP_KEYWORDS)
+_CO_OP_PATTERN = _matcher(frozenset(("co-op", "coop")))
 _SOFTWARE_ENGINEERING_PATTERN = _matcher(SOFTWARE_ENGINEERING_KEYWORDS)
 _FUNCTION_REJECT_PATTERN = _matcher(
     PRODUCT_REJECT_KEYWORDS
@@ -587,8 +587,11 @@ def _dated_terms(text: str) -> set[tuple[Season, int]]:
     }
 
 
-def _seasons_allow(seasons: set[Season]) -> bool:
-    return all(season is TARGET_SEASON for season in seasons)
+def _seasons_allow(seasons: set[Season], role: str) -> bool:
+    allowed_seasons: set[Season] = {TARGET_SEASON}
+    if _CO_OP_PATTERN.search(role):
+        allowed_seasons.add(Season.SPRING)
+    return seasons <= allowed_seasons
 
 
 def _years_allow(years: set[int], dated: set[tuple[Season, int]], target_year: int) -> bool:
@@ -611,7 +614,7 @@ def _season_allows(job: Job) -> bool:
     seasons = _stated_seasons(role) | {season for season, _ in dated}
     if job.season is not None:
         seasons.add(job.season)
-    if not _seasons_allow(seasons):
+    if not _seasons_allow(seasons, role):
         return False
     years = _stated_years(role) | {year for _, year in dated}
     return _years_allow(years, dated, target_summer_year(job.found_at))
