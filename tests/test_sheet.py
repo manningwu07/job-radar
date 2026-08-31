@@ -72,7 +72,7 @@ def make_job(
         remote=False,
         posted_at=date(2026, 7, 1),
         found_at=date(2026, 7, 27),
-        source=Source.GREENHOUSE,
+        source=Source.POOL,
         apply_url=apply_url,
         careers_url="https://example.com/careers",
         platform=Platform.GREENHOUSE,

@@ -12,6 +12,7 @@ from radar import cli
 from radar.cli import AppendPlan, ExitCode, _publish, _reconcile_with_sheet, main
 from radar.models import Job, Platform, Source
 from radar.sheet import SheetError, identity_key
+from radar.sources import SourceError
 from radar.state import Store
 
 FOUND_AT = date(2026, 7, 27)
@@ -33,7 +34,7 @@ def make_job(
         remote=False,
         posted_at=date(2026, 7, 20),
         found_at=FOUND_AT,
-        source=Source.GREENHOUSE,
+        source=Source.POOL,
         apply_url=apply_url,
         careers_url="https://example.com/careers",
         platform=Platform.GREENHOUSE,
@@ -83,8 +84,12 @@ class UnusableSheet:
         raise AssertionError("the sheet must not be opened on this path")
 
 
-def fake_fetch_all(boards: Sequence[object], found_at: date) -> list[Job]:
+def fake_fetch_all(found_at: date) -> list[Job]:
     return [make_job()]
+
+
+def failing_fetch_all(found_at: date) -> list[Job]:
+    raise SourceError("pool unavailable")
 
 
 @pytest.fixture
@@ -158,7 +163,7 @@ def test_publish_appends_everything_when_state_and_sheet_agree(
 def test_publish_emails_only_when_the_run_has_something_to_report(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Four runs a day must not mean four emails a day."""
+    """Three runs a day must not mean three emails a day."""
     sent: list[str] = []
     monkeypatch.setattr(cli, "_send_email_best_effort", sent.append)
     already_known = make_job()
@@ -307,3 +312,35 @@ def test_missing_credentials_are_a_config_error_outside_dry_run(
     exit_code = main(["--state", str(tmp_path / "state.json")])
 
     assert exit_code == ExitCode.CONFIG_ERROR
+
+
+@pytest.mark.usefixtures("sheet_env")
+def test_scheduled_path_fetches_the_pool_and_appends_to_the_sheet(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sheet: FakeSheet = FakeSheet()
+    monkeypatch.setattr(cli, "JobSheet", sheet)
+    monkeypatch.setattr(cli, "fetch_all", fake_fetch_all)
+    state_path: Path = tmp_path / "state.json"
+
+    exit_code: int = main(["--state", str(state_path)])
+
+    assert exit_code == ExitCode.OK
+    assert [job.company for job in sheet.appended] == ["OpenAI"]
+    assert state_path.exists()
+
+
+@pytest.mark.usefixtures("sheet_env")
+def test_pool_failure_leaves_the_sheet_and_state_untouched(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sheet: FakeSheet = FakeSheet()
+    monkeypatch.setattr(cli, "JobSheet", sheet)
+    monkeypatch.setattr(cli, "fetch_all", failing_fetch_all)
+    state_path: Path = tmp_path / "state.json"
+
+    exit_code: int = main(["--state", str(state_path)])
+
+    assert exit_code == ExitCode.NO_SOURCES
+    assert sheet.appended == []
+    assert not state_path.exists()

@@ -35,7 +35,6 @@ class Platform(Enum):
     ASHBY = "Ashby"
     SMARTRECRUITERS = "SmartRecruiters"
     WORKDAY = "Workday"
-    AMD = "AMD"
     OTHER = "Other"
 
 
@@ -47,13 +46,7 @@ class Season(Enum):
 
 
 class Source(Enum):
-    GREENHOUSE = "greenhouse"
-    LEVER = "lever"
-    ASHBY = "ashby"
-    SMARTRECRUITERS = "smartrecruiters"
-    WORKDAY = "workday"
-    AMD = "amd"
-    SIMPLIFY = "simplify"
+    POOL = "pool"
 
 
 def normalize(text: str) -> str:

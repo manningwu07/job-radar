@@ -2,24 +2,9 @@ name: scan
 
 on:
   schedule:
-    # Three looks a day, placed on the hours postings actually land rather than spread
-    # evenly around the clock. Measured over AMD's 630 US requisitions, 95% were posted
-    # between 06:00 and 17:00 Pacific and peaked at 08:00; the whole 00:00-05:00 window
-    # held 1.6% between it. Scanning the dead hours costs runs and finds nothing, so
-    # these three sit at 09:00, 13:00 and 17:00 Pacific.
-    #
-    # That is fewer runs than an every-six-hours schedule and a shorter wait during the
-    # hours that matter: at most four hours from posting to digest through the working
-    # day, against six. The overnight gap is long but nearly empty, and anything posted
-    # in it is picked up by the 09:00 run the same morning.
-    #
-    # The :04 offset matters as much as the hours. Scheduled runs are queued, and the
-    # top of the hour is the most contended slot on Actions, where this workflow has
-    # been observed starting anywhere from 16 minutes to two hours late.
-    #
-    # GitHub evaluates cron in UTC only and never observes daylight saving time, so
-    # these land an hour earlier in local terms from November to March: 08:00, 12:00
-    # and 16:00 Pacific, which is still inside the active window.
+    # GitHub evaluates cron in UTC. These run at 09:00, 13:00, and 17:00 Pacific
+    # during daylight saving time, one hour earlier during standard time. The :04
+    # offset avoids the busiest Actions queue minute.
     - cron: "4 16,20,0 * * *"
   workflow_dispatch:
 
@@ -44,12 +29,12 @@ jobs:
       # setup-uv publishes no floating major tag, so this must be an exact version.
       - uses: astral-sh/setup-uv@v9.0.0
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       # The CLI appends its digest to $GITHUB_STEP_SUMMARY, which Actions injects
       # into every step's environment, so the digest lands in the run summary
       # without a separate step.
-      - name: Scan job boards
+      - name: Scan pooled applications
         env:
           JOB_RADAR_SHEET_ID: ${{ secrets.JOB_RADAR_SHEET_ID }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}

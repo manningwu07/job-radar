@@ -21,8 +21,7 @@ from datetime import date
 from enum import Enum, IntEnum
 from typing import NamedTuple
 
-from radar.boards import company_priority
-from radar.models import LOCATION_SEPARATOR, Job, Season, Source, join_locations, normalize
+from radar.models import LOCATION_SEPARATOR, Job, Platform, Season, join_locations, normalize
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +68,6 @@ class SortKey(NamedTuple):
     """Ascending ranking key. The trailing names make the order total, so a run's output
     does not depend on the order the sources returned equally ranked postings."""
 
-    company_rank: int
     category: int
     recency: int
     geo: GeoTier
@@ -684,7 +682,7 @@ def _is_us_eligible(job: Job) -> bool:
 
     An unrecognized location is KEPT. Bare `Remote` and a bare city with no country are
     the common shapes of a US posting that simply did not spell out its country, and
-    these boards are US-company boards, so treating silence as foreign would drop real
+    pooled listings often omit the country, so treating silence as foreign would drop real
     opportunities to remove a few. A posting is only dropped on positive evidence.
     """
     if _FOREIGN_PLACE_PATTERN.search(normalize(job.role)):
@@ -766,9 +764,8 @@ def _geo_rank(location: str, remote: bool) -> GeoTier:
 
 
 def sort_key(job: Job) -> SortKey:
-    """Ascending ranking key: company priority, interest area, recency, then geography."""
+    """Ascending ranking key: interest area, recency, geography, then names."""
     return SortKey(
-        company_rank=company_priority(job.company),
         category=categorize(job.role).value,
         recency=_posting_rank(job.posted_at),
         geo=_geo_rank(job.location, job.remote),
@@ -778,10 +775,10 @@ def sort_key(job: Job) -> SortKey:
 
 
 def _url_preference(job: Job) -> tuple[int, int, int, str]:
-    """Ascending: a first-party ATS link beats Simplify, a bare URL beats a parameterised
+    """Ascending: a known ATS link beats another host, a bare URL beats a parameterised
     one, then the shortest canonical form wins, with the URL itself as a stable tiebreak."""
     return (
-        int(job.source is Source.SIMPLIFY),
+        int(job.platform is Platform.OTHER),
         int(QUERY_MARKER in job.apply_url),
         len(job.apply_url),
         job.apply_url,

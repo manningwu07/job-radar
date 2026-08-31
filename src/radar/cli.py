@@ -6,17 +6,16 @@ import os
 import smtplib
 import sys
 from collections.abc import Mapping, Sequence
-from datetime import datetime
+from datetime import date, datetime
 from enum import IntEnum
 from pathlib import Path
 from typing import NamedTuple
 from zoneinfo import ZoneInfo
 
-from radar.boards import BOARDS
 from radar.models import Job
 from radar.notify import render_digest, send_email, write_step_summary
 from radar.sheet import JobSheet, SheetError
-from radar.sources import fetch_all
+from radar.sources import SourceError, fetch_all
 from radar.state import Diff, StateError, Store
 from radar.triage import triage
 
@@ -128,7 +127,7 @@ def _publish(
     digest = render_digest(plan.to_append, updated)
     write_step_summary(digest)
     print(digest)
-    # Four runs a day means four digests a day, and most of them find nothing. Only a
+    # Three runs a day means three digests a day, and most of them find nothing. Only a
     # run with something to report earns an email; the step summary still records every
     # run, so a quiet run is visible in Actions without landing in the inbox.
     if plan.to_append or updated:
@@ -141,25 +140,27 @@ def _publish(
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = _parse_args(argv)
+    args: argparse.Namespace = _parse_args(argv)
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO, format=LOG_FORMAT
     )
-    if not BOARDS:
-        logger.error("No job boards are configured, nothing to fetch")
-        return ExitCode.NO_SOURCES
-    missing = _missing_env(SHEET_ENV_VARS)
+    missing: list[str] = _missing_env(SHEET_ENV_VARS)
     if not args.dry_run and missing:
         logger.error("Missing required environment variables: %s", ", ".join(missing))
         return ExitCode.CONFIG_ERROR
-    found_at = datetime.now(PACIFIC).date()
-    ranked_jobs = triage(fetch_all(BOARDS, found_at))
+    found_at: date = datetime.now(PACIFIC).date()
     try:
-        store = Store.load(args.state)
+        fetched_jobs: list[Job] = fetch_all(found_at)
+    except SourceError:
+        logger.exception("Cannot read the pooled internship feed")
+        return ExitCode.NO_SOURCES
+    ranked_jobs: list[Job] = triage(fetched_jobs)
+    try:
+        store: Store = Store.load(args.state)
     except StateError:
         logger.exception("Cannot read state file %s, refusing to overwrite it", args.state)
         return ExitCode.CONFIG_ERROR
-    diff = store.diff(ranked_jobs)
+    diff: Diff = store.diff(ranked_jobs)
     if args.dry_run:
         print(render_digest(diff.new, len(diff.changed)))
         return ExitCode.OK

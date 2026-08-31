@@ -36,9 +36,9 @@ tasks:
       - uv run pytest
 
   dry-run:
-    desc: "Fetch and triage, print the digest, write nothing (no credentials needed)"
+    desc: "Fetch the pool and triage, print the digest, write nothing"
     summary: |
-      The safe way to see what the pipeline would do. It fetches the job boards,
+      The safe way to see what the pipeline would do. It fetches the pooled feed,
       runs triage, and prints the digest to stdout. It does not write to the
       Google Sheet, does not send email, and does not update data/state.json.
 
@@ -50,10 +50,10 @@ tasks:
       - uv run job-radar --dry-run
 
   run:
-    desc: "Real run: fetch, triage, update the sheet, email the digest, save state"
+    desc: "Fetch the pool, update the sheet, email the digest, save state"
     summary: |
       The full pipeline, identical to what the daily GitHub Action executes.
-      It fetches every board, triages the results, diffs against
+      It fetches the pooled feed, triages the results, diffs against
       data/state.json, appends new rows to the Google Sheet, emails you the
       digest, and saves the updated state file.
 

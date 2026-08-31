@@ -36,7 +36,7 @@ def make_job(
     posted_at: date | None = None,
     apply_url: str = "https://example.com/apply/1",
     found_at: date = TODAY,
-    source: Source = Source.GREENHOUSE,
+    source: Source = Source.POOL,
     platform: Platform = Platform.GREENHOUSE,
     season: Season | None = None,
 ) -> Job:
@@ -472,7 +472,7 @@ def test_rejects_posting_past_the_age_limit() -> None:
     assert not is_relevant(make_job("Software Engineering Intern", posted_at=STALE))
 
 
-def test_rejects_year_old_posting_from_a_priority_company() -> None:
+def test_rejects_year_old_posting() -> None:
     stale_tesla = make_job(
         "Software Engineer Intern, Update Systems",
         company="Tesla",
@@ -590,23 +590,23 @@ def test_merge_is_remote_when_any_member_is_remote() -> None:
     assert not merge_duplicates([onsite, onsite]).remote
 
 
-def test_merge_prefers_the_first_party_ats_url_over_simplify() -> None:
-    simplify = make_job(
+def test_merge_prefers_a_known_ats_url_over_an_aggregator_url() -> None:
+    aggregator = make_job(
         "Software Engineering Intern",
-        source=Source.SIMPLIFY,
+        source=Source.POOL,
         platform=Platform.OTHER,
         apply_url="https://simplify.jobs/p/abc/software-engineering-intern",
     )
     ats = make_job(
         "Software Engineering Intern",
-        source=Source.GREENHOUSE,
+        source=Source.POOL,
         platform=Platform.GREENHOUSE,
         apply_url="https://boards.greenhouse.io/anduril/jobs/5148079007",
     )
-    for group in ([simplify, ats], [ats, simplify]):
+    for group in ([aggregator, ats], [ats, aggregator]):
         merged = merge_duplicates(group)
         assert merged.apply_url == ats.apply_url
-        assert merged.source is Source.GREENHOUSE
+        assert merged.source is Source.POOL
         assert merged.platform is Platform.GREENHOUSE
 
 
@@ -653,7 +653,7 @@ def test_merge_takes_every_url_bound_field_from_one_record() -> None:
         remote=False,
         posted_at=FRESH,
         found_at=TODAY,
-        source=Source.LEVER,
+        source=Source.POOL,
         apply_url="https://jobs.lever.co/palantir/7d69cf8a",
         careers_url="https://jobs.lever.co/palantir",
         platform=Platform.LEVER,
@@ -665,7 +665,7 @@ def test_merge_takes_every_url_bound_field_from_one_record() -> None:
         remote=True,
         posted_at=FRESH,
         found_at=TODAY,
-        source=Source.SIMPLIFY,
+        source=Source.POOL,
         apply_url="https://simplify.jobs/p/xyz",
         careers_url="https://www.palantir.com/careers",
         platform=Platform.OTHER,
@@ -701,7 +701,7 @@ def anduril_year_variants() -> tuple[Job, Job]:
         company="Anduril",
         location="Atlanta, GA",
         posted_at=FRESH - timedelta(days=17),
-        source=Source.SIMPLIFY,
+        source=Source.POOL,
         platform=Platform.OTHER,
         apply_url="https://job-boards.greenhouse.io/andurilindustries/jobs/5148079007",
     )
@@ -864,17 +864,17 @@ def test_ranking_is_total_so_output_order_never_depends_on_input_order() -> None
     assert triage([masters, undergrad]) == triage([undergrad, masters])
 
 
-def test_tier_one_swe_bay_area_outranks_tier_three_research() -> None:
-    tier_one = make_job(
+def test_software_engineering_outranks_research_engineering() -> None:
+    software = make_job(
         "Software Engineering Intern",
         company="OpenAI",
         location="San Francisco, CA",
         posted_at=date(2026, 6, 1),
     )
-    tier_three = make_job(
+    research = make_job(
         "Research Engineering Intern",
         company="Obscure Research Lab",
         location="Ames, IA",
         posted_at=date(2026, 7, 26),
     )
-    assert sort_key(tier_one) < sort_key(tier_three)
+    assert sort_key(software) < sort_key(research)
