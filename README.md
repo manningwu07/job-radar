@@ -71,13 +71,13 @@ The sheet is append-only except for stale application URLs. The pipeline never r
 
 ## Selection rules
 
-A listing must:
+A listing already comes from the curated internship and student-opportunity pool. Its
+title does not need to contain `intern`, `internship`, or `co-op`. It must:
 
-- describe an internship, co-op, student, university, apprentice, or early-career role;
 - match software engineering, machine learning, infrastructure, distributed systems, platform, robotics software, or research engineering;
 - target undergraduate candidates or leave degree level unstated;
 - include a US location, remote eligibility, or an unqualified location;
-- target the current Summer recruiting cycle, a Spring 2027 co-op, or leave the term unstated;
+- target Spring or Summer 2027, or leave the term unstated;
 - be no more than 180 days old when a posting date exists.
 
 Product management, analytics, IT support, QA, quantitative research, senior roles, graduate-only roles, and narrow frontend, mobile, or security roles are excluded.

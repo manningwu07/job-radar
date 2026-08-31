@@ -74,6 +74,7 @@ ACCEPTED_ROLES = [
     "Research Engineering Intern",
     "Software Engineer Co-op (Undergraduate)",
     "Student Software Developer Apprentice",
+    "Software Engineer, Backend",
 ]
 
 REJECTED_ROLES = [
@@ -87,7 +88,6 @@ REJECTED_ROLES = [
     "Quantitative Research Intern",
     "Quant Researcher Intern",
     "Trading Intern",
-    "Software Engineer, Backend",
     "Marketing Intern",
 ]
 
@@ -345,8 +345,8 @@ def test_rejects_past_seasons(role_template: str) -> None:
     assert not is_relevant(make_job(role_template.format(year=PAST_YEAR)))
 
 
-def test_rejects_spring_of_target_year() -> None:
-    assert not is_relevant(make_job(f"Software Engineering Intern, Spring {TARGET_YEAR}"))
+def test_accepts_spring_internship_of_target_year() -> None:
+    assert is_relevant(make_job(f"Software Engineering Intern, Spring {TARGET_YEAR}"))
 
 
 @pytest.mark.parametrize("role_term", ["Co-op", "Coop"])
@@ -408,8 +408,8 @@ def test_accepts_academic_year_range_ending_at_the_target_year() -> None:
     assert is_relevant(make_job(f"{PAST_YEAR}-{TARGET_YEAR} Software Engineering Internship"))
 
 
-@pytest.mark.parametrize("season", [Season.SPRING, Season.FALL, Season.WINTER])
-def test_rejects_non_summer_season_field_for_an_internship(season: Season) -> None:
+@pytest.mark.parametrize("season", [Season.FALL, Season.WINTER])
+def test_rejects_fall_and_winter_season_fields(season: Season) -> None:
     fall_req = make_job(
         "Software Engineer Intern, Service Engineering",
         company="Tesla",
@@ -420,6 +420,10 @@ def test_rejects_non_summer_season_field_for_an_internship(season: Season) -> No
 
 def test_accepts_summer_season_field() -> None:
     assert is_relevant(make_job("Software Engineering Intern", season=Season.SUMMER))
+
+
+def test_accepts_spring_season_field() -> None:
+    assert is_relevant(make_job("Software Engineering Intern", season=Season.SPRING))
 
 
 def test_accepts_unstated_season_field() -> None:

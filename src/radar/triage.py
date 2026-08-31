@@ -74,25 +74,6 @@ class SortKey(NamedTuple):
     role_name: str
 
 
-INTERNSHIP_KEYWORDS = frozenset(
-    {
-        "intern",
-        "interns",
-        "internship",
-        "internships",
-        "co-op",
-        "coop",
-        "student",
-        "students",
-        "university",
-        "undergraduate",
-        "apprentice",
-        "apprenticeship",
-        "early career",
-        "early-career",
-    }
-)
-
 SOFTWARE_ENGINEERING_KEYWORDS = frozenset(
     {
         "software engineer",
@@ -486,8 +467,6 @@ def _matcher(keywords: frozenset[str]) -> re.Pattern[str]:
     return re.compile(rf"\b(?:{alternatives})\b")
 
 
-_INTERNSHIP_PATTERN = _matcher(INTERNSHIP_KEYWORDS)
-_CO_OP_PATTERN = _matcher(frozenset(("co-op", "coop")))
 _SOFTWARE_ENGINEERING_PATTERN = _matcher(SOFTWARE_ENGINEERING_KEYWORDS)
 _FUNCTION_REJECT_PATTERN = _matcher(
     PRODUCT_REJECT_KEYWORDS
@@ -587,10 +566,8 @@ def _dated_terms(text: str) -> set[tuple[Season, int]]:
     }
 
 
-def _seasons_allow(seasons: set[Season], role: str) -> bool:
-    allowed_seasons: set[Season] = {TARGET_SEASON}
-    if _CO_OP_PATTERN.search(role):
-        allowed_seasons.add(Season.SPRING)
+def _seasons_allow(seasons: set[Season]) -> bool:
+    allowed_seasons: set[Season] = {Season.SPRING, TARGET_SEASON}
     return seasons <= allowed_seasons
 
 
@@ -614,7 +591,7 @@ def _season_allows(job: Job) -> bool:
     seasons = _stated_seasons(role) | {season for season, _ in dated}
     if job.season is not None:
         seasons.add(job.season)
-    if not _seasons_allow(seasons, role):
+    if not _seasons_allow(seasons):
         return False
     years = _stated_years(role) | {year for _, year in dated}
     return _years_allow(years, dated, target_summer_year(job.found_at))
@@ -724,10 +701,8 @@ def _is_fresh(posted_at: date | None, found_at: date) -> bool:
 
 
 def is_relevant(job: Job) -> bool:
-    """True for a fresh US undergraduate summer internship in one of the interest areas."""
+    """True for a fresh US undergraduate Spring or Summer pooled role in an interest area."""
     role = normalize(job.role)
-    if not _INTERNSHIP_PATTERN.search(role):
-        return False
     if categorize(role) is RoleCategory.OTHER:
         return False
     if _is_rejected(role):
