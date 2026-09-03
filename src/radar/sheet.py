@@ -2,8 +2,10 @@
 
 import json
 import logging
-from collections.abc import Mapping, Sequence
+import time
+from collections.abc import Callable, Mapping, Sequence
 from datetime import date
+from typing import TypeVar
 
 import google.auth.exceptions
 import gspread
@@ -18,6 +20,7 @@ logger = logging.getLogger(__name__)
 SHEET_SCOPES = ("https://www.googleapis.com/auth/spreadsheets",)
 VALUE_INPUT_OPTION = "RAW"
 INSERT_DATA_OPTION = "INSERT_ROWS"
+READ_RETRY_DELAYS_SECONDS: tuple[float, ...] = (1.0, 2.0, 4.0)
 
 HEADER_ROW = 1
 FIRST_DATA_ROW = 2
@@ -36,10 +39,38 @@ _KEY_PROBE_DATE = date.min
 _KEY_PROBE_SOURCE = Source.POOL
 _KEY_PROBE_PLATFORM = Platform.OTHER
 _KEY_PROBE_TEXT = ""
+_ResultT = TypeVar("_ResultT")
 
 
 class SheetError(Exception):
     """Raised on sheet auth, configuration, or API failure."""
+
+
+def _retry_transient_read(
+    operation: Callable[[], _ResultT], description: str
+) -> _ResultT:
+    """Retry a read when Google returns a transient HTTP status."""
+    retry_count: int = len(READ_RETRY_DELAYS_SECONDS)
+    attempt_number: int
+    delay_seconds: float
+    for attempt_number, delay_seconds in enumerate(READ_RETRY_DELAYS_SECONDS, start=1):
+        try:
+            return operation()
+        except gspread.exceptions.APIError as exc:
+            status_code: int = exc.code
+            retryable: bool = status_code in (408, 429) or 500 <= status_code <= 599
+            if not retryable:
+                raise
+            logger.warning(
+                "Google Sheets %s failed with HTTP %d; retrying in %.1f seconds (%d/%d)",
+                description,
+                status_code,
+                delay_seconds,
+                attempt_number,
+                retry_count,
+            )
+            time.sleep(delay_seconds)
+    return operation()
 
 
 def identity_key(company: str, role: str) -> str:
@@ -83,7 +114,9 @@ def _open_spreadsheet(sheet_id: str, service_account_json: str) -> gspread.Sprea
 
     try:
         client = gspread.authorize(credentials)
-        return client.open_by_key(sheet_id)
+        return _retry_transient_read(
+            lambda: client.open_by_key(sheet_id), "spreadsheet metadata read"
+        )
     except google.auth.exceptions.GoogleAuthError as exc:
         raise SheetError(f"Google authentication failed: {exc}") from exc
     except gspread.exceptions.GSpreadException as exc:
@@ -96,7 +129,9 @@ def _own_worksheet(spreadsheet: gspread.Spreadsheet) -> gspread.Worksheet:
     Never positional: a spreadsheet's leftmost tab may be someone else's tracker.
     """
     try:
-        return spreadsheet.worksheet(WORKSHEET_TITLE)
+        return _retry_transient_read(
+            lambda: spreadsheet.worksheet(WORKSHEET_TITLE), "worksheet metadata read"
+        )
     except gspread.exceptions.WorksheetNotFound:
         logger.info("Creating worksheet %s", WORKSHEET_TITLE)
     except gspread.exceptions.GSpreadException as exc:
@@ -122,7 +157,9 @@ def _widen_to_headers(worksheet: gspread.Worksheet) -> None:
 
 def _ensure_headers(worksheet: gspread.Worksheet) -> None:
     try:
-        header = worksheet.row_values(HEADER_ROW)
+        header: list[str] = _retry_transient_read(
+            lambda: worksheet.row_values(HEADER_ROW), "header read"
+        )
     except gspread.exceptions.GSpreadException as exc:
         raise SheetError(f"Could not read the header row: {exc}") from exc
 
@@ -166,7 +203,9 @@ class JobSheet:
     def existing_keys(self) -> dict[str, int]:
         """Map Job.key to 1-based row number for every populated data row."""
         try:
-            values = self._worksheet.get_all_values()
+            values: list[list[str]] = _retry_transient_read(
+                self._worksheet.get_all_values, "sheet contents read"
+            )
         except gspread.exceptions.GSpreadException as exc:
             raise SheetError(f"Could not read sheet contents: {exc}") from exc
 

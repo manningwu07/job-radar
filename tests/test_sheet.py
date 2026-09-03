@@ -1,10 +1,12 @@
 import copy
 import json
+from collections.abc import Callable
 from datetime import date
 
 import gspread.exceptions
 import gspread.utils
 import pytest
+import requests
 
 from radar import sheet
 from radar.models import SHEET_HEADERS, Job, Platform, Source, join_locations
@@ -195,6 +197,15 @@ def patch_google(monkeypatch, worksheet):
     )
 
 
+def make_api_error(status_code: int) -> gspread.exceptions.APIError:
+    response: requests.Response = requests.Response()
+    response.status_code = status_code
+    response._content = json.dumps(
+        {"error": {"code": status_code, "message": "service unavailable"}}
+    ).encode()
+    return gspread.exceptions.APIError(response)
+
+
 def test_scopes_are_minimal():
     assert sheet.SHEET_SCOPES == ("https://www.googleapis.com/auth/spreadsheets",)
 
@@ -330,6 +341,49 @@ def test_open_wraps_gspread_failure(monkeypatch):
 
     with pytest.raises(sheet.SheetError):
         sheet.JobSheet.open(SHEET_ID, SERVICE_ACCOUNT_JSON)
+
+
+def test_open_retries_transient_spreadsheet_metadata_failure(monkeypatch):
+    worksheet: FakeWorksheet = FakeWorksheet(values=[list(SHEET_HEADERS)])
+    authorizer: FakeAuthorizer = patch_google(monkeypatch, worksheet)
+    failures: list[gspread.exceptions.APIError] = [make_api_error(503), make_api_error(503)]
+    delays: list[float] = []
+    original_open: Callable[[str], FakeSpreadsheet] = authorizer.client.open_by_key
+
+    def open_after_outage(key: str) -> FakeSpreadsheet:
+        if failures:
+            raise failures.pop(0)
+        return original_open(key)
+
+    monkeypatch.setattr(authorizer.client, "open_by_key", open_after_outage)
+    monkeypatch.setattr(sheet.time, "sleep", delays.append)
+
+    opened: sheet.JobSheet = sheet.JobSheet.open(SHEET_ID, SERVICE_ACCOUNT_JSON)
+
+    assert opened.existing_keys() == {}
+    assert delays == [1.0, 2.0]
+
+
+def test_open_retries_transient_worksheet_metadata_failure(monkeypatch):
+    worksheet: FakeWorksheet = FakeWorksheet(values=[list(SHEET_HEADERS)])
+    spreadsheet: FakeSpreadsheet = FakeSpreadsheet(tabs={sheet.WORKSHEET_TITLE: worksheet})
+    patch_google_spreadsheet(monkeypatch, spreadsheet)
+    failures: list[gspread.exceptions.APIError] = [make_api_error(503), make_api_error(503)]
+    delays: list[float] = []
+    original_worksheet: Callable[[str], FakeWorksheet] = spreadsheet.worksheet
+
+    def worksheet_after_outage(title: str) -> FakeWorksheet:
+        if failures:
+            raise failures.pop(0)
+        return original_worksheet(title)
+
+    monkeypatch.setattr(spreadsheet, "worksheet", worksheet_after_outage)
+    monkeypatch.setattr(sheet.time, "sleep", delays.append)
+
+    opened: sheet.JobSheet = sheet.JobSheet.open(SHEET_ID, SERVICE_ACCOUNT_JSON)
+
+    assert opened.existing_keys() == {}
+    assert delays == [1.0, 2.0]
 
 
 def test_existing_keys_match_job_key():
