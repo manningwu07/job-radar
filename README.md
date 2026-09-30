@@ -1,6 +1,6 @@
 # job-radar
 
-job-radar scans a broad Summer 2027 internship pool three times a day, filters for relevant software engineering roles, and appends unseen applications to Google Sheets. It does not maintain or crawl a company allowlist.
+job-radar scans a broad Summer 2027 internship pool three times a day, filters for relevant software engineering roles, and appends unseen applications to Google Sheets. It reads employer postings to check pay at smaller companies.
 
 The source is [SimplifyJobs/Summer2027-Internships](https://github.com/SimplifyJobs/Summer2027-Internships). A feed with no listing updates in 14 days fails the scan, even if its HTTP response succeeds.
 
@@ -9,7 +9,7 @@ The pooled feed contains applications across Greenhouse, Lever, Ashby, SmartRecr
 ## Pipeline
 
 ```text
-pooled feed -> normalize -> filter and rank -> dedupe state -> Google Sheet -> email digest
+pooled feed -> normalize -> employer pay checks -> filter and rank -> dedupe state -> Google Sheet -> email digest
 ```
 
 The cron runs at 09:00, 13:00, and 17:00 Pacific during daylight saving time. GitHub Actions uses UTC, so the runs occur one hour earlier locally during standard time.
@@ -96,7 +96,11 @@ The filter also reads the feed's term years and degree requirements. A generic t
 
 Product management, analytics, IT support, QA, quantitative research, senior roles, graduate-only roles, and narrow frontend, mobile, or security roles are excluded.
 
-The ranking is company-neutral. It orders by role category, posting recency, geographic preference, company name, and role name.
+Prominent employers pass the company/pay rule regardless of posted pay. Other employers require a verified USD base-pay minimum of at least $30/hour; missing pay, unreadable postings, and ranges starting below $30 are excluded. The reviewed prominent-employer list lives in `src/radar/triage.py`; it includes Deloitte and excludes Zoox from the pay exemption. This classification reflects the requested preference, not an objective company ranking.
+
+Pay checks use employer pages and public ATS endpoints. Annual salary converts at 2,080 hours, so $30/hour equals $62,400/year. Monthly and weekly amounts use the same full-time assumption. Bonuses, housing stipends, and benefits do not count as base pay. Existing sheet rows remain as application history; this rule controls future scan eligibility.
+
+Among eligible jobs, the ranking is company-neutral. It orders by role category, posting recency, geographic preference, company name, and role name.
 
 ## Dedupe and state
 

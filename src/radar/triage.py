@@ -25,6 +25,29 @@ from radar.models import LOCATION_SEPARATOR, Job, Platform, Season, join_locatio
 
 logger = logging.getLogger(__name__)
 
+MINIMUM_HOURLY_PAY: float = 30.0
+PROMINENT_COMPANIES: frozenset[str] = frozenset(normalize(company) for company in (
+    "Accenture", "Adobe", "AMD", "Amazon", "American Express", "Anduril", "Anthropic",
+    "Apple", "Atlassian", "Bank of America", "Bloomberg", "BNY", "Boeing", "Boston Scientific",
+    "Broadcom", "ByteDance", "Capital One", "Cisco", "Citadel", "Citadel Securities",
+    "Cloudflare", "CME Group", "Coinbase", "Databricks", "Datadog", "DeepMind", "Dell",
+    "Deloitte", "D. E. Shaw", "DE Shaw", "DoorDash", "Dropbox", "Duolingo", "Electronic Arts",
+    "Expedia Group", "EY", "Fidelity", "Figma", "GE Aerospace", "GE Vernova", "General Motors",
+    "Goldman Sachs", "Google", "Honeywell", "HubSpot", "IBM", "Intel", "Intuit", "Jane Street",
+    "John Deere", "Johnson & Johnson", "JPMorgan Chase", "KPMG", "LinkedIn", "Lockheed Martin",
+    "Lyft", "Marvell", "Meta", "Micron", "Microsoft", "MongoDB", "Morgan Stanley", "Netflix",
+    "Nike", "Northrop Grumman", "Notion", "NVIDIA", "NXP", "OpenAI", "Oracle", "Palantir",
+    "PayPal", "Pinterest", "PwC", "Qualcomm", "Ramp", "Reddit", "Rippling", "Rivian", "Roblox",
+    "RTX", "Salesforce", "Samsung", "Samsung Research America", "SAP", "Scale AI", "ServiceNow",
+    "Snap", "Snowflake", "SpaceX", "Spotify", "Stripe", "Stryker", "Tesla", "TikTok", "Two Sigma",
+    "Uber", "Visa", "Walmart", "Waymo", "Wells Fargo", "Workday", "Yahoo", "Zoom",
+))
+
+
+def is_prominent(company: str) -> bool:
+    """Return whether a reviewed employer bypasses the minimum-pay requirement."""
+    return normalize(company) in PROMINENT_COMPANIES
+
 
 class RoleCategory(Enum):
     """Interest areas. Value is the user's interest priority, lower sorts first.
@@ -709,7 +732,7 @@ def _is_fresh(posted_at: date | None, found_at: date) -> bool:
     return (found_at - posted_at).days <= MAX_POSTING_AGE_DAYS
 
 
-def is_relevant(job: Job) -> bool:
+def is_role_relevant(job: Job) -> bool:
     """True for a fresh US undergraduate Spring or Summer pooled role in an interest area."""
     role = normalize(job.role)
     if categorize(role) is RoleCategory.OTHER:
@@ -725,6 +748,14 @@ def is_relevant(job: Job) -> bool:
     if not _is_fresh(job.posted_at, job.found_at):
         return False
     return _season_allows(job)
+
+
+def is_relevant(job: Job) -> bool:
+    """Return whether role eligibility and the company/pay policy both pass."""
+    return is_role_relevant(job) and (
+        is_prominent(job.company)
+        or job.hourly_pay_min is not None and job.hourly_pay_min >= MINIMUM_HOURLY_PAY
+    )
 
 
 def _posting_rank(posted_at: date | None) -> int:

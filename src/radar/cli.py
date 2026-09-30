@@ -13,6 +13,7 @@ from typing import NamedTuple
 from zoneinfo import ZoneInfo
 
 from radar.models import Job
+from radar.pay import enrich_pay
 from radar.notify import render_digest, send_email, write_step_summary
 from radar.sheet import JobSheet, SheetError
 from radar.sources import SourceError, fetch_all
@@ -151,7 +152,7 @@ def main(argv: list[str] | None = None) -> int:
     except SourceError:
         logger.exception("Cannot read the pooled internship feed")
         return ExitCode.NO_SOURCES
-    ranked_jobs: list[Job] = triage(fetched_jobs)
+    ranked_jobs: list[Job] = triage(enrich_pay(fetched_jobs))
     try:
         store: Store = Store.load(args.state)
     except StateError:

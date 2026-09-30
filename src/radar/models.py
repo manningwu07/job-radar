@@ -94,6 +94,7 @@ class Job:
     season: Season | None = None
     terms: tuple[str, ...] = ()
     degrees: tuple[str, ...] = ()
+    hourly_pay_min: float | None = None
 
     @property
     def key(self) -> str:

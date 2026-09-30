@@ -39,6 +39,7 @@ def make_job(
     source: Source = Source.POOL,
     platform: Platform = Platform.GREENHOUSE,
     season: Season | None = None,
+    hourly_pay_min: float | None = 30.0,
 ) -> Job:
     return Job(
         company=company,
@@ -52,6 +53,7 @@ def make_job(
         careers_url="https://example.com/careers",
         platform=platform,
         season=season,
+        hourly_pay_min=hourly_pay_min,
     )
 
 

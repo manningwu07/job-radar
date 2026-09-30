@@ -212,7 +212,7 @@ def test_pool_metadata_filters_eligibility_when_title_is_generic(
     payload: list[dict[str, object]] = [{
         "active": True,
         "is_visible": True,
-        "company_name": "Example",
+        "company_name": "Google",
         "title": "Software Engineering Intern",
         "url": "https://example.com/jobs/1",
         "date_posted": 1784878468,
