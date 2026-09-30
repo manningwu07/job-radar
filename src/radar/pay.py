@@ -65,7 +65,7 @@ def minimum_hourly_pay(text: str) -> float | None:
         suffix: str = text[match.end():match.end() + 70]
         if re.search(r"(?:stipend|bonus|allowance|fertility|insurance|HRA|HSA|FSA).{0,50}$", prefix, re.IGNORECASE):
             continue
-        following: str = re.sub(r"^\s*(?:min|max|minimum|maximum)\s+", "", suffix, flags=re.IGNORECASE).lstrip()
+        following: str = re.sub(r"^\s*(?:USD\s*|(?:min|max|minimum|maximum)\s+)", "", suffix, flags=re.IGNORECASE).lstrip()
         unit: re.Match[str] | None = UNIT_PATTERN.match(following)
         if unit is None:
             if not re.search(r"\b(?:salary|compensation|pay|hourly|rate)\b", prefix, re.IGNORECASE):
@@ -93,6 +93,34 @@ def minimum_hourly_pay(text: str) -> float | None:
         if 0 < rate <= 500:
             rates.append(rate)
     return min(rates) if rates else None
+
+
+def ashby_base_pay_text(compensation: object) -> str:
+    """Return explicit USD base-pay ranges from Ashby compensation metadata."""
+    if compensation is None:
+        return ""
+    if not isinstance(compensation, dict):
+        raise ValueError("Ashby compensation must be an object")
+    components: object = compensation.get("summaryComponents", [])
+    if not isinstance(components, list):
+        raise ValueError("Ashby compensation components must be a list")
+    units: dict[str, str] = {"1 HOUR": "hour", "1 WEEK": "week", "1 MONTH": "month", "1 YEAR": "year"}
+    ranges: list[str] = []
+    component: object
+    for component in components:
+        if not isinstance(component, dict):
+            raise ValueError("Ashby compensation component must be an object")
+        if component.get("currencyCode") != "USD" or component.get("compensationType") != "Salary":
+            continue
+        interval: object = component.get("interval")
+        low: object = component.get("minValue")
+        high: object = component.get("maxValue")
+        if not isinstance(interval, str) or interval not in units:
+            raise ValueError("Ashby USD salary has an unsupported pay period")
+        if type(low) not in {int, float} or type(high) not in {int, float}:
+            raise ValueError("Ashby salary bounds must be numbers")
+        ranges.append(f" Base pay ${low} to ${high} per {units[interval]}.")
+    return "".join(ranges)
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,7 +157,7 @@ def inspect_posting(job: Job) -> PostingEvidence:
         url = f"https://api.lever.co/v0/postings/{parts[0]}/{parts[1]}"
         kind = "lever"
     elif host == "jobs.ashbyhq.com" and len(parts) >= 2:
-        url = f"https://api.ashbyhq.com/posting-api/job-board/{parts[0]}"
+        url = f"https://api.ashbyhq.com/posting-api/job-board/{parts[0]}?includeCompensation=true"
         kind = "ashby"
     try:
         response: requests.Response = requests.get(url, timeout=REQUEST_TIMEOUT)
@@ -167,6 +195,7 @@ def inspect_posting(job: Job) -> PostingEvidence:
                     raise ValueError("Ashby posting is no longer in the employer's live feed")
                 title = str(matching[0]["title"])
                 text = str(matching[0]["descriptionPlain"])
+                text += ashby_base_pay_text(matching[0].get("compensation"))
             else:
                 title = str(payload["text"])
                 text = plain_text(str(payload["description"])) + " " + plain_text(str(payload.get("additional", "")))

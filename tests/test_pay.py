@@ -6,7 +6,7 @@ from datetime import date
 import pytest
 
 from radar.models import Job, Platform, Source
-from radar.pay import minimum_hourly_pay, plain_text
+from radar.pay import ashby_base_pay_text, minimum_hourly_pay, plain_text
 from radar.triage import is_relevant
 
 
@@ -14,6 +14,7 @@ from radar.triage import is_relevant
     ("Base pay $30.00 - $45.00 per hour", 30.0),
     ("The hourly rate range for this position is $29.99 - $60.00.", 29.99),
     ("Base pay $30/hr", 30.0),
+    ("Expected pay $50.00 USD/hour", 50.0),
     ("Base salary $62,400 to $100,000 per year", 30.0),
     ("Base pay $5,200 per month", 30.0),
     ("A $4,800 housing stipend per month", None),
@@ -32,6 +33,23 @@ def test_minimum_pay_uses_explicit_period_and_the_low_end(
 def test_reversed_employer_pay_range_fails_loudly() -> None:
     with pytest.raises(ValueError, match="maximum below"):
         minimum_hourly_pay("Base pay $45 to $30 per hour")
+
+
+def test_structured_pay_uses_only_usd_base_salary() -> None:
+    compensation: dict[str, object] = {"summaryComponents": [
+        {"compensationType": "Salary", "currencyCode": "USD", "interval": "1 YEAR", "minValue": 104000, "maxValue": 125000},
+        {"compensationType": "Salary", "currencyCode": "CAD", "interval": "1 HOUR", "minValue": 20, "maxValue": 25},
+        {"compensationType": "Bonus", "currencyCode": "USD", "interval": "1 YEAR", "minValue": 1000, "maxValue": 2000},
+    ]}
+    assert minimum_hourly_pay(ashby_base_pay_text(compensation)) == 50.0
+
+
+def test_structured_salary_without_pay_period_fails_loudly() -> None:
+    compensation: dict[str, object] = {"summaryComponents": [
+        {"compensationType": "Salary", "currencyCode": "USD", "minValue": 50, "maxValue": 60},
+    ]}
+    with pytest.raises(ValueError, match="pay period"):
+        ashby_base_pay_text(compensation)
 
 
 def test_salary_in_an_unrelated_script_is_not_pay_evidence() -> None:
