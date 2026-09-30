@@ -516,7 +516,7 @@ def test_age_limit_uses_found_at_not_the_wall_clock() -> None:
 def palantir_city_reqs() -> list[Job]:
     """The live shape: one Lever requisition per city, same role, four different URLs."""
     cities = [
-        ("Palo Alto, CA", "e27af7ab", date(2026, 6, 24)),
+        ("Palo Alto, CA", "e27af7ab", date(2026, 6, 28)),
         ("New York, NY", "7d69cf8a", date(2026, 7, 1)),
         ("Washington, D.C.", "bdcfb29f", None),
         ("Denver, CO", "373eb939", date(2026, 6, 30)),
@@ -895,3 +895,9 @@ def test_software_engineering_outranks_research_engineering() -> None:
         posted_at=date(2026, 7, 26),
     )
     assert sort_key(software) < sort_key(research)
+
+
+@pytest.mark.parametrize(("age_days", "expected"), [(30, True), (31, False)])
+def test_posting_age_stops_at_thirty_days(age_days: int, expected: bool) -> None:
+    job: Job = make_job("Software Engineer Intern", posted_at=TODAY - timedelta(days=age_days))
+    assert is_relevant(job) is expected

@@ -90,7 +90,7 @@ title does not need to contain `intern`, `internship`, or `co-op`. It must:
 - target undergraduate candidates or leave degree level unstated;
 - include a US location, remote eligibility, or an unqualified location;
 - target Spring or Summer 2027, or leave the term unstated;
-- be no more than 180 days old when a posting date exists.
+- be no more than 30 days old when a posting date exists.
 
 The filter also reads the feed's term years and degree requirements. A generic title cannot hide a Summer 2026 term or a graduate-only requirement.
 
