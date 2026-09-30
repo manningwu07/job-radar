@@ -34,6 +34,7 @@ COMPANY_INDEX = SHEET_HEADERS.index("Company")
 ROLE_INDEX = SHEET_HEADERS.index("Role")
 APPLY_URL_INDEX = SHEET_HEADERS.index("Application URL")
 APPLY_URL_COLUMN_NUMBER = APPLY_URL_INDEX + 1
+POSTING_DATE_COLUMN_NUMBER: int = SHEET_HEADERS.index("Posting Date") + 1
 
 _KEY_PROBE_DATE = date.min
 _KEY_PROBE_SOURCE = Source.POOL
@@ -255,3 +256,24 @@ class JobSheet:
             raise SheetError(f"Could not update {len(updates)} application URLs: {exc}") from exc
         logger.info("Updated %d application URLs", len(updates))
         return len(updates)
+
+    def sort_by_posting_date(self) -> None:
+        """Sort complete data rows by posting date descending, preserving the header."""
+        request: dict[str, object] = {
+            "requests": [{"sortRange": {
+                "range": {
+                    "sheetId": self._worksheet.id,
+                    "startRowIndex": HEADER_ROW,
+                    "startColumnIndex": 0,
+                    "endColumnIndex": self._worksheet.col_count,
+                },
+                "sortSpecs": [{
+                    "dimensionIndex": POSTING_DATE_COLUMN_NUMBER - 1,
+                    "sortOrder": "DESCENDING",
+                }],
+            }}],
+        }
+        try:
+            self._worksheet.spreadsheet.batch_update(request)
+        except gspread.exceptions.GSpreadException as exc:
+            raise SheetError(f"Could not sort worksheet by posting date: {exc}") from exc

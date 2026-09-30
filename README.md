@@ -2,6 +2,8 @@
 
 job-radar scans a broad Summer 2027 internship pool three times a day, filters for relevant software engineering roles, and appends unseen applications to Google Sheets. It does not maintain or crawl a company allowlist.
 
+The source is [SimplifyJobs/Summer2027-Internships](https://github.com/SimplifyJobs/Summer2027-Internships). A feed with no listing updates in 14 days fails the scan, even if its HTTP response succeeds.
+
 The pooled feed contains applications across Greenhouse, Lever, Ashby, SmartRecruiters, Workday, and company career sites. job-radar identifies the application platform from each URL and writes it to the `Platform` column.
 
 ## Pipeline
@@ -13,6 +15,10 @@ pooled feed -> normalize -> filter and rank -> dedupe state -> Google Sheet -> e
 The cron runs at 09:00, 13:00, and 17:00 Pacific during daylight saving time. GitHub Actions uses UTC, so the runs occur one hour earlier locally during standard time.
 
 One failed pool fetch fails the run before touching the sheet or state. Sheet writes happen before `data/state.json` changes, so a failed sheet write gets retried on the next run.
+
+The sheet determines which rows are missing. A job recorded in state but absent from `Job Radar` gets restored on the next scan if it still passes the filter.
+
+Every successful scan sorts complete `Job Radar` rows by Posting Date, newest first. Undated jobs appear last. The header stays in row 1, and statuses move with their jobs.
 
 ## Local use
 
@@ -67,7 +73,13 @@ Missing email settings skip email but do not block the scan or sheet update.
 | Platform | Greenhouse, Lever, Ashby, SmartRecruiters, Workday, or Other |
 | Status | Starts as `Not Applied`; later edits are preserved |
 
-The sheet is append-only except for stale application URLs. The pipeline never rewrites `Status`.
+The pipeline appends jobs, refreshes stale application URLs, and sorts complete rows by posting date. It never rewrites `Status`.
+
+## Zero2sudo imports
+
+On September 30, 2026, a signed-in browser session supplied Zero2sudo Story links and the [Direct Consideration newsletter](https://directconsideration.com/p/direct-consideration-008). Employer pages were checked before writing through `gws`: 3 additional jobs were appended and 4 existing matches were tagged in `Source`.
+
+These imports are separate from the scheduled pool scan. Instagram's [oEmbed endpoint](https://developers.facebook.com/documentation/instagram-platform/oembed) does not support Stories. A Google OAuth client grants Google access, not access to another Instagram account's Stories. No unattended Story collector is configured. Local `gws` credentials live outside this repository in `~/.config/gws`.
 
 ## Selection rules
 
@@ -80,6 +92,8 @@ title does not need to contain `intern`, `internship`, or `co-op`. It must:
 - target Spring or Summer 2027, or leave the term unstated;
 - be no more than 180 days old when a posting date exists.
 
+The filter also reads the feed's term years and degree requirements. A generic title cannot hide a Summer 2026 term or a graduate-only requirement.
+
 Product management, analytics, IT support, QA, quantitative research, senior roles, graduate-only roles, and narrow frontend, mobile, or security roles are excluded.
 
 The ranking is company-neutral. It orders by role category, posting recency, geographic preference, company name, and role name.
@@ -88,7 +102,7 @@ The ranking is company-neutral. It orders by role category, posting recency, geo
 
 The identity key is normalized company plus normalized role. Location and URL do not affect identity, which merges multi-city copies and lets a moved application update its existing row.
 
-`data/state.json` records seen keys. The scheduled workflow commits that file after a successful sheet update. To report a posting again, remove its entry from state and remove its old sheet row if you do not want a duplicate.
+`data/state.json` records seen keys and application URLs. The scheduled workflow commits that file after a successful sheet update. Missing sheet rows are restored without clearing state. Existing rows keep their status.
 
 ## Commands
 

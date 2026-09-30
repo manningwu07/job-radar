@@ -586,7 +586,16 @@ def _season_allows(job: Job) -> bool:
     only for a season next to a year, because board slugs carry company names such as
     `spring-health` and requisition numbers that look like years.
     """
-    role = normalize(job.role)
+    stated_terms: set[tuple[Season, int]] = {
+        term for label in job.terms for term in _dated_terms(normalize(label))
+    }
+    if stated_terms and not any(
+        season in {Season.SPRING, TARGET_SEASON}
+        and year == target_summer_year(job.found_at)
+        for season, year in stated_terms
+    ):
+        return False
+    role: str = normalize(job.role)
     dated = _dated_terms(role) | _dated_terms(normalize(job.apply_url))
     seasons = _stated_seasons(role) | {season for season, _ in dated}
     if job.season is not None:
@@ -708,6 +717,8 @@ def is_relevant(job: Job) -> bool:
     if _is_rejected(role):
         return False
     if _is_graduate_only(role):
+        return False
+    if job.degrees and _is_graduate_only(" ".join(job.degrees)):
         return False
     if not _is_us_eligible(job):
         return False

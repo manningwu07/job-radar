@@ -92,6 +92,8 @@ class Job:
     platform: Platform
     status: str = DEFAULT_STATUS
     season: Season | None = None
+    terms: tuple[str, ...] = ()
+    degrees: tuple[str, ...] = ()
 
     @property
     def key(self) -> str:

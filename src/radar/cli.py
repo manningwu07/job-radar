@@ -43,7 +43,7 @@ class ExitCode(IntEnum):
 
 
 class AppendPlan(NamedTuple):
-    """`diff.new` split by what the sheet already holds."""
+    """Ranked jobs split by what the sheet already holds."""
 
     to_append: list[Job]
     already_present: list[Job]
@@ -89,20 +89,13 @@ def _send_email_best_effort(digest: str) -> None:
         logger.exception("Email delivery failed, continuing without it")
 
 
-def _reconcile_with_sheet(new_jobs: Sequence[Job], rows: Mapping[str, int]) -> AppendPlan:
-    """Split `diff.new` into rows the sheet lacks and rows it already holds.
-
-    `diff.new` is derived from the state file alone, so it lists every job the state has
-    not seen even when the sheet already holds it. The two drift for ordinary reasons: a
-    first run against a populated sheet, a state commit that never got pushed, a user
-    resetting `data/state.json`, or two runs racing. The sheet is authoritative for what is
-    present, so anything already there is never appended again.
-    """
-    to_append = [job for job in new_jobs if job.key not in rows]
-    already_present = [job for job in new_jobs if job.key in rows]
+def _reconcile_with_sheet(jobs: Sequence[Job], rows: Mapping[str, int]) -> AppendPlan:
+    """Return missing and present jobs using the sheet as authority."""
+    to_append: list[Job] = [job for job in jobs if job.key not in rows]
+    already_present: list[Job] = [job for job in jobs if job.key in rows]
     if already_present:
         logger.info(
-            "State and sheet disagree: %d job(s) already in the sheet, appending %d",
+            "%d job(s) already in the sheet, appending %d",
             len(already_present),
             len(to_append),
         )
@@ -113,18 +106,22 @@ def _publish(
     diff: Diff, ranked_jobs: list[Job], store: Store, state_path: Path
 ) -> ExitCode:
     try:
-        sheet = JobSheet.open(
+        sheet: JobSheet = JobSheet.open(
             os.environ[ENV_SHEET_ID], os.environ[ENV_SERVICE_ACCOUNT_JSON]
         )
-        rows = sheet.existing_keys()
-        plan = _reconcile_with_sheet(diff.new, rows)
-        appended = sheet.append(plan.to_append)
-        updated = sheet.update_apply_urls([*diff.changed, *plan.already_present], rows)
+        rows: dict[str, int] = sheet.existing_keys()
+        plan: AppendPlan = _reconcile_with_sheet(ranked_jobs, rows)
+        appended: int = sheet.append(plan.to_append)
+        url_candidates: list[Job] = [
+            job for job in [*diff.changed, *diff.new] if job.key in rows
+        ]
+        updated: int = sheet.update_apply_urls(url_candidates, rows)
+        sheet.sort_by_posting_date()
     except SheetError:
         logger.exception("Sheet update failed, state left untouched for the next run")
         return ExitCode.SHEET_ERROR
     logger.info("Appended %d rows, refreshed %d application URLs", appended, updated)
-    digest = render_digest(plan.to_append, updated)
+    digest: str = render_digest(plan.to_append, updated)
     write_step_summary(digest)
     print(digest)
     # Three runs a day means three digests a day, and most of them find nothing. Only a

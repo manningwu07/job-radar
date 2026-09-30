@@ -69,6 +69,9 @@ class FakeSheet:
         self.url_updates.extend(present)
         return len(present)
 
+    def sort_by_posting_date(self) -> None:
+        return None
+
 
 class FailingSheet:
     """A sheet whose authorization fails, to exercise the fatal path."""
@@ -123,6 +126,25 @@ def test_reconcile_logs_the_drift_count(caplog: pytest.LogCaptureFixture) -> Non
         _reconcile_with_sheet([present], {present.key: FIRST_DATA_ROW})
     assert "already in the sheet" in caplog.text
     assert "1 job(s)" in caplog.text
+
+
+@pytest.mark.usefixtures("sheet_env")
+def test_sort_failure_leaves_state_unsaved_for_retry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    class UnsortableSheet(FakeSheet):
+        def sort_by_posting_date(self) -> None:
+            raise SheetError("sort unavailable")
+
+    state_path: Path = tmp_path / "state.json"
+    store: Store = Store.load(state_path)
+    jobs: list[Job] = [make_job()]
+    worksheet: UnsortableSheet = UnsortableSheet()
+    monkeypatch.setattr(cli, "JobSheet", worksheet)
+    result: ExitCode = _publish(store.diff(jobs), jobs, store, state_path)
+    assert result is ExitCode.SHEET_ERROR
+    assert worksheet.appended == jobs
+    assert not state_path.exists()
 
 
 @pytest.mark.usefixtures("sheet_env")
@@ -267,7 +289,8 @@ def test_publish_records_the_full_ranked_set_so_drift_self_heals(
     second_sheet = FakeSheet(present=[drifted])
     monkeypatch.setattr(cli, "JobSheet", second_sheet)
     _publish(healed.diff(ranked), ranked, healed, state_path)
-    assert second_sheet.appended == []
+    assert second_sheet.appended == [genuinely_new]
+    assert second_sheet.url_updates == []
 
 
 @pytest.mark.usefixtures("sheet_env")

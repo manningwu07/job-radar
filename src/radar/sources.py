@@ -21,9 +21,10 @@ HTTP_RETRY_METHODS = frozenset(("GET",))
 USER_AGENT = "job-radar/1.0 (+personal internship search)"
 DEFAULT_LOCATION = "Unspecified"
 POOL_URL = (
-    "https://raw.githubusercontent.com/vanshb03/"
+    "https://raw.githubusercontent.com/SimplifyJobs/"
     "Summer2027-Internships/dev/.github/scripts/listings.json"
 )
+MAX_FEED_AGE_DAYS: int = 14
 GREENHOUSE_JOB_ID_PARAMETER = "gh_jid"
 WORKDAY_HOST_SUFFIX = ".myworkdayjobs.com"
 PLATFORM_BY_HOST: dict[str, Platform] = {
@@ -67,6 +68,8 @@ class PoolPosting(TypedDict, total=False):
     company_url: str
     title: str
     date_posted: int
+    date_updated: int
+    degrees: list[str]
     terms: list[str]
     season: str
     active: bool
@@ -85,6 +88,8 @@ class _JobFields:
     careers_url: str
     platform: Platform
     season: Season | None
+    terms: tuple[str, ...]
+    degrees: tuple[str, ...]
 
 
 def canonical_company(company: str) -> str:
@@ -164,6 +169,8 @@ def _build_job(fields: _JobFields, locations: Sequence[str]) -> Job:
         careers_url=fields.careers_url,
         platform=fields.platform,
         season=fields.season,
+        terms=fields.terms,
+        degrees=fields.degrees,
     )
 
 
@@ -178,6 +185,8 @@ def _pool_job(posting: PoolPosting, found_at: date) -> Job:
         careers_url=posting.get("company_url", ""),
         platform=platform_from_application_url(apply_url),
         season=_posting_season(posting),
+        terms=tuple(posting.get("terms", [])),
+        degrees=tuple(posting.get("degrees", [])),
     )
     return _build_job(fields, posting.get("locations", [DEFAULT_LOCATION]))
 
@@ -190,6 +199,22 @@ def fetch_pool(session: requests.Session, found_at: date) -> list[Job]:
     if not isinstance(payload, list) or not payload:
         raise ValueError("Pooled internship feed must return a nonempty JSON list")
     postings: list[PoolPosting] = cast(list[PoolPosting], payload)
+    update_dates: list[date] = []
+    posting: PoolPosting
+    for posting in postings:
+        updated_at: date | None = _parse_epoch_date(
+            posting.get("date_updated", posting.get("date_posted"))
+        )
+        if updated_at is not None:
+            update_dates.append(updated_at)
+    if not update_dates:
+        raise ValueError("Pooled internship feed contains no valid update dates")
+    latest_update: date = max(update_dates)
+    if (found_at - latest_update).days > MAX_FEED_AGE_DAYS:
+        raise ValueError(
+            f"Pooled internship feed is stale: latest update {latest_update}, "
+            f"more than {MAX_FEED_AGE_DAYS} days old"
+        )
     jobs: list[Job] = [
         _pool_job(posting, found_at)
         for posting in postings
