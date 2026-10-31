@@ -35,6 +35,20 @@
       "location": "Cary, NC",
       "role": "Software Engineer Student Intern - Product Engineering"
     },
+    "044a14f09e15093b": {
+      "apply_url": "https://job-boards.greenhouse.io/thenewyorktimes/jobs/4748483005",
+      "company": "The New York Times",
+      "first_seen": "2026-10-30",
+      "location": "NYC",
+      "role": "Backend Engineer Intern"
+    },
+    "049452fdd75ad2e8": {
+      "apply_url": "https://amazon.jobs/en/jobs/10593521/software-development-engineer-intern-machine-learning-automated-reasoning-summer-2027",
+      "company": "Amazon",
+      "first_seen": "2026-10-30",
+      "location": "Seattle, WA; Boston, MA; Austin, TX",
+      "role": "Software Engineer Intern - Machine Learning/Automated Reasoning"
+    },
     "04efde126e1e4e99": {
       "apply_url": "https://www.tesla.com/careers/search/job/280960",
       "company": "Tesla",
@@ -2177,6 +2191,13 @@
       "location": "Seattle, WA",
       "role": "Software Engineer Intern"
     },
+    "55711640001004f6": {
+      "apply_url": "https://elucid.applytojob.com/apply/6VSEqF73l9/Software-Engineering-Intern-Spring-2027",
+      "company": "Elucid",
+      "first_seen": "2026-10-30",
+      "location": "Boston, MA",
+      "role": "Software Engineer Intern"
+    },
     "55b096c55793c12f": {
       "apply_url": "https://jobs.lever.co/zoox/7206fd97-14e4-43a0-b903-ba65dfeee53e/apply",
       "company": "Zoox",
@@ -2583,6 +2604,13 @@
       "location": "San Jose, CA",
       "role": "Student Researcher - AI Foundation Model Infrastructure - Seed"
     },
+    "67f9f62167c1722d": {
+      "apply_url": "https://www.metacareers.com/jobs/1553890293163197",
+      "company": "Meta",
+      "first_seen": "2026-10-30",
+      "location": "Menlo Park, CA",
+      "role": "Research Scientist Intern - Video Recsys"
+    },
     "6856ce6f2e98d233": {
       "apply_url": "https://hdnn.fa.us6.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX/job/114233",
       "company": "Arconic",
@@ -2689,7 +2717,7 @@
       "role": "Software Engineer Intern - Embedded Systems"
     },
     "6a561b68401bf75d": {
-      "apply_url": "https://www.metacareers.com/jobs/1789380188995838",
+      "apply_url": "https://www.metacareers.com/jobs/1126899676481179",
       "company": "Meta",
       "first_seen": "2026-10-27",
       "location": "Menlo Park, CA; Bellevue, WA",
@@ -4393,7 +4421,7 @@
       "apply_url": "https://ngc.wd1.myworkdayjobs.com/Northrop_Grumman_External_Site/job/United-States-Colorado-Boulder/XMLNAME-2027-Software-Engineering-Intern---Boulder-CO_R10257798",
       "company": "Northrop Grumman",
       "first_seen": "2026-07-27",
-      "location": "Beavercreek, OH; Boulder, CO; Colorado Springs, CO",
+      "location": "Boulder, CO; Colorado Springs, CO",
       "role": "Software Engineer Intern"
     },
     "b08f7c0d650406a6": {
