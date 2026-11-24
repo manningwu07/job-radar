@@ -42,6 +42,13 @@
       "location": "Los Angeles",
       "role": "Software Engineering Intern, Embedded Systems"
     },
+    "03d4a2acd5709f11": {
+      "apply_url": "https://amazon.jobs/en/jobs/10606968/software-development-engineer-intern-artificial-general-intelligence-summer-2027",
+      "company": "Amazon",
+      "first_seen": "2026-11-23",
+      "location": "Bellevue, WA; Seattle, WA; Boston, MA",
+      "role": "Software Development Engineer Intern - Artificial General Intelligence"
+    },
     "03f207ca96fea5c7": {
       "apply_url": "https://johndeere.eightfold.ai/careers/job/137483990019",
       "company": "John Deere",
@@ -3206,6 +3213,13 @@
       "location": "SF",
       "role": "Economics Research Intern"
     },
+    "70888e9a67c23325": {
+      "apply_url": "https://jobs.ashbyhq.com/first-resonance/0c88b508-432d-442d-aa5f-486e08aaf5a7/application?embed=true",
+      "company": "First Resonance",
+      "first_seen": "2026-11-23",
+      "location": "LA",
+      "role": "Software Engineer Intern - Platform"
+    },
     "70e69004015f86c3": {
       "apply_url": "https://job-boards.greenhouse.io/doordashusa/jobs/8263774",
       "company": "DoorDash",
@@ -3968,6 +3982,13 @@
       "first_seen": "2026-10-21",
       "location": "Redmond, WA",
       "role": "Research Scientist Intern - Robot Foundation Models"
+    },
+    "8a9d2988c7a04b3e": {
+      "apply_url": "https://jobs.ashbyhq.com/benchling/96370d1b-d35e-446b-8e26-dce088860099/application?embed=true",
+      "company": "Benchling",
+      "first_seen": "2026-11-23",
+      "location": "SF",
+      "role": "Software Engineer Intern"
     },
     "8bafbf9e52d7ebba": {
       "apply_url": "https://bah.wd1.myworkdayjobs.com/bah_jobs/job/Huntsville-AL/University---2027-Summer-Games-Software-Developer-Intern---Huntsville--AL_R0248394",
@@ -4788,6 +4809,13 @@
       "location": "San Mateo, CA",
       "role": "Backend Software Engineer Intern"
     },
+    "abdfb92e7c84ff02": {
+      "apply_url": "https://jobs.ashbyhq.com/Strava/12d85f67-5fac-4dfa-8fd7-a4f886b4a10a/application?embed=true",
+      "company": "Strava",
+      "first_seen": "2026-11-23",
+      "location": "SF",
+      "role": "Software Engineer Intern - Server - User Lifecycle"
+    },
     "ac89a42edfc81f38": {
       "apply_url": "https://job-boards.greenhouse.io/sage49/jobs/6131191004",
       "company": "Sage",
@@ -4845,10 +4873,10 @@
       "role": "Research Scientist Intern - Computational Photography & Computer Vision"
     },
     "aee042cc1c014041": {
-      "apply_url": "https://www.metacareers.com/jobs/1648122343381284",
+      "apply_url": "https://www.metacareers.com/jobs/2432079507324778",
       "company": "Meta",
       "first_seen": "2026-10-23",
-      "location": "Menlo Park, CA; Sunnyvale, CA; Bellevue, WA; +1 more",
+      "location": "Menlo Park, CA; Sunnyvale, CA",
       "role": "Research Scientist Intern - AI Core Machine Learning"
     },
     "af10bc5b08934749": {
@@ -4857,6 +4885,13 @@
       "first_seen": "2026-09-30",
       "location": "Chattanooga, TN",
       "role": "Software Engineer Intern"
+    },
+    "af15a36588e855ad": {
+      "apply_url": "https://jobs.ashbyhq.com/Strava/e4e04f82-bc91-4bc1-b775-85b2b2549023/application?embed=true",
+      "company": "Strava",
+      "first_seen": "2026-11-23",
+      "location": "SF",
+      "role": "Machine Learning Engineer Intern - AI/ML Data Products"
     },
     "af41024e1675014f": {
       "apply_url": "https://lifeattiktok.com/search/7670295535077427509",
@@ -4962,6 +4997,13 @@
       "first_seen": "2026-10-09",
       "location": "Orlando, FL",
       "role": "AI Agentic Flow for GPU ASIC Design Co-op Intern"
+    },
+    "b43348870a7a0e29": {
+      "apply_url": "https://jobs.ashbyhq.com/Strava/0a1c94e3-c19c-47a4-9974-5cc86b74e3e9/application?embed=true",
+      "company": "Strava",
+      "first_seen": "2026-11-23",
+      "location": "SF",
+      "role": "Software Engineer Intern - Server - Next Sports"
     },
     "b444e02b0913c194": {
       "apply_url": "https://careers.jhuapl.edu/jobs/59968?icims=1",
@@ -5992,6 +6034,13 @@
       "location": "Mountain View, CA; SF; Bellevue, WA",
       "role": "Software Engineer Intern"
     },
+    "da9cf1190a40d9e2": {
+      "apply_url": "https://johndeere.eightfold.ai/careers/job/137484510505",
+      "company": "John Deere",
+      "first_seen": "2026-11-23",
+      "location": "Urbandale, IA",
+      "role": "Simulation Engineering Student Intern - Product Engineering"
+    },
     "db1293e299548f09": {
       "apply_url": "https://jobs.lever.co/zoox/dafe2927-74bf-4bef-8df0-cb0874595819/apply",
       "company": "Zoox",
@@ -6573,6 +6622,13 @@
       "location": "SF",
       "role": "Software Engineer Intern - AIML Platform - HP IQ"
     },
+    "f18e7a42ac635a8f": {
+      "apply_url": "https://jobs.ashbyhq.com/Strava/96968b02-dde9-4e0d-b6a8-d2363f550126/application?embed=true",
+      "company": "Strava",
+      "first_seen": "2026-11-23",
+      "location": "SF",
+      "role": "Software Engineer Intern - Server - Comms"
+    },
     "f1f94ed102962592": {
       "apply_url": "https://www.metacareers.com/jobs/1751935042548465",
       "company": "Meta",
@@ -6887,6 +6943,13 @@
       "first_seen": "2026-09-30",
       "location": "NYC",
       "role": "Software Engineer Intern - RFQ"
+    },
+    "fc9cc55d3b9e59e1": {
+      "apply_url": "https://jobs.ashbyhq.com/shield/f96617c2-a120-4b3b-844d-790fcda42503/application?embed=true",
+      "company": "Shield AI",
+      "first_seen": "2026-11-23",
+      "location": "Dallas, TX",
+      "role": "Software Engineering Intern"
     },
     "fca8e65888145c94": {
       "apply_url": "https://jobs.ashbyhq.com/saronic/60afb634-5515-4347-824a-3816735541c2/application?embed=true",
